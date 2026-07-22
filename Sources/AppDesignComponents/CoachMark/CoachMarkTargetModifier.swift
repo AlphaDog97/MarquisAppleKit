@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CoachMarkTargetPreferenceKey: PreferenceKey {
-    static var defaultValue: [CoachMarkTargetID: Anchor<CGRect>] = [:]
+    static let defaultValue: [CoachMarkTargetID: Anchor<CGRect>] = [:]
 
     static func reduce(
         value: inout [CoachMarkTargetID: Anchor<CGRect>],
