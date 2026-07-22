@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-22
+
 ### Added
 
 - 初始化 `AppCore`、`AppDesignTokens` 和 `AppDesignComponents`。
