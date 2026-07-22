@@ -1,9 +1,9 @@
-name: Release
+name: Release v0.1.0
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    types:
+      - opened
 
 permissions:
   contents: write
@@ -11,30 +11,21 @@ permissions:
 
 jobs:
   release:
-    if: startsWith(github.event.head_commit.message, 'Release ')
+    if: >-
+      github.event.pull_request.title == 'Release 0.1.0' &&
+      github.event.pull_request.head.ref == 'release-trigger/v0.1.0'
     runs-on: macos-15
 
+    env:
+      RELEASE_SHA: 36c543dfb37cf04ac92a36ab7a358f23f9390fba
+      VERSION: 0.1.0
+      TAG: v0.1.0
+
     steps:
-      - name: Check out repository
+      - name: Check out release commit
         uses: actions/checkout@v6
-
-      - name: Parse version
-        shell: bash
-        env:
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-        run: |
-          set -euo pipefail
-
-          first_line="${COMMIT_MESSAGE%%$'\n'*}"
-          version="${first_line#Release }"
-
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
-            echo "Invalid release commit message: $first_line" >&2
-            exit 1
-          fi
-
-          echo "VERSION=$version" >> "$GITHUB_ENV"
-          echo "TAG=v$version" >> "$GITHUB_ENV"
+        with:
+          ref: ${{ env.RELEASE_SHA }}
 
       - name: Mark release pending
         env:
@@ -42,7 +33,7 @@ jobs:
         run: |
           gh api \
             --method POST \
-            "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            "repos/$GITHUB_REPOSITORY/statuses/$RELEASE_SHA" \
             -f state=pending \
             -f context="release/$TAG" \
             -f description="Testing before publishing $TAG" \
@@ -82,7 +73,7 @@ jobs:
           fi
 
           gh release create "$TAG" \
-            --target "$GITHUB_SHA" \
+            --target "$RELEASE_SHA" \
             --title "MarquisAppleKit $VERSION" \
             --notes-file release-notes.md \
             --latest
@@ -93,20 +84,20 @@ jobs:
         run: |
           gh api \
             --method POST \
-            "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            "repos/$GITHUB_REPOSITORY/statuses/$RELEASE_SHA" \
             -f state=success \
             -f context="release/$TAG" \
             -f description="Published $TAG" \
             -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$TAG"
 
       - name: Mark release failed
-        if: ${{ failure() && env.TAG != '' }}
+        if: ${{ failure() }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh api \
             --method POST \
-            "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            "repos/$GITHUB_REPOSITORY/statuses/$RELEASE_SHA" \
             -f state=failure \
             -f context="release/$TAG" \
             -f description="Failed to publish $TAG" \
