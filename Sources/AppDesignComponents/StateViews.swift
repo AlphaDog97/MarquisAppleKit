@@ -16,7 +16,7 @@ public struct LoadingStateView: View {
                 .tint(theme.primary)
 
             Text(message)
-                .font(AppTypography.body)
+                .appTextStyle(.supporting)
                 .foregroundStyle(theme.textSecondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -55,18 +55,18 @@ public struct EmptyStateView: View {
 
             VStack(spacing: AppSpacing.small) {
                 Text(title)
-                    .font(AppTypography.headline)
+                    .appTextStyle(.cardTitle)
                     .foregroundStyle(theme.textPrimary)
 
                 Text(message)
-                    .font(AppTypography.body)
+                    .appTextStyle(.body)
                     .foregroundStyle(theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
 
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
-                    .font(AppTypography.headline)
+                    .appTextStyle(.control)
                     .foregroundStyle(theme.primary)
             }
         }

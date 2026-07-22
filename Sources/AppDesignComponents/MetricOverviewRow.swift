@@ -22,12 +22,12 @@ public struct MetricOverviewRow: View {
         HStack(alignment: .firstTextBaseline, spacing: AppSpacing.medium) {
             VStack(alignment: .leading, spacing: AppSpacing.extraSmall) {
                 Text(title)
-                    .font(AppTypography.headline)
+                    .appTextStyle(.cardTitle)
                     .foregroundStyle(theme.textPrimary)
 
                 if let subtitle {
                     Text(subtitle)
-                        .font(AppTypography.caption)
+                        .appTextStyle(.metadata)
                         .foregroundStyle(theme.textSecondary)
                 }
             }
@@ -35,9 +35,8 @@ public struct MetricOverviewRow: View {
             Spacer(minLength: AppSpacing.medium)
 
             Text(value)
-                .font(AppTypography.title)
+                .appTextStyle(.metric)
                 .foregroundStyle(theme.primary)
-                .monospacedDigit()
         }
     }
 }

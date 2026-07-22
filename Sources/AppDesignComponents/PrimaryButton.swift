@@ -30,7 +30,7 @@ public struct PrimaryButton: View {
                 }
 
                 Text(title)
-                    .font(AppTypography.headline)
+                    .appTextStyle(.control)
             }
             .foregroundStyle(theme.onPrimary)
             .frame(maxWidth: .infinity)

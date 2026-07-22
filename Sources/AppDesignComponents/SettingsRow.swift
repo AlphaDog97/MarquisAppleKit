@@ -31,12 +31,12 @@ public struct SettingsRow<Trailing: View>: View {
 
             VStack(alignment: .leading, spacing: AppSpacing.extraSmall) {
                 Text(title)
-                    .font(AppTypography.body)
+                    .appTextStyle(.body)
                     .foregroundStyle(theme.textPrimary)
 
                 if let subtitle {
                     Text(subtitle)
-                        .font(AppTypography.caption)
+                        .appTextStyle(.metadata)
                         .foregroundStyle(theme.textSecondary)
                 }
             }

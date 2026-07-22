@@ -18,12 +18,14 @@
 
 ### AppDesignTokens
 
-统一设计语言的最小令牌集合：
+统一设计语言的基础令牌：
 
 - 间距 `AppSpacing`
 - 圆角 `AppRadius`
 - 动效 `AppMotion`
-- 字体层级 `AppTypography`
+- App 语义字体角色 `AppTypographyRole`
+- Widget 与 Live Activity 字体角色 `AppWidgetTypographyRole`
+- 字体别名 `AppTypography`
 - 可注入的语义主题 `AppTheme`
 
 ### AppDesignComponents
@@ -82,9 +84,9 @@ import AppDesignComponents
 
 ## 快速使用
 
-### 注入 App 主题
+### 注入 App 主题和字体作用域
 
-每个 App 保留自己的品牌主题：
+每个 App 保留自己的品牌主题，并在场景根节点应用一次字体作用域：
 
 ```swift
 import AppDesignTokens
@@ -109,10 +111,40 @@ struct ExampleApp: App {
         WindowGroup {
             ContentView()
                 .appTheme(myAppTheme)
+                .appTypographyScope()
         }
     }
 }
 ```
+
+`appTypographyScope()` 为尚未迁移的旧视图提供统一圆体基线。新代码仍应显式选择语义角色。
+
+### 使用语义字体
+
+```swift
+VStack(alignment: .leading, spacing: AppSpacing.small) {
+    Text("Weekly Progress")
+        .appTextStyle(.eyebrow)
+
+    Text("Keep moving forward")
+        .appTextStyle(.heroTitle)
+
+    Text("You completed 18 of 24 planned tasks.")
+        .appTextStyle(.body)
+
+    Text("75%")
+        .appTextStyle(.metricLarge)
+}
+```
+
+当某个 API 只接受 `Font` 时，使用字体别名：
+
+```swift
+Text("18 days")
+    .font(AppTypography.metricCompact)
+```
+
+优先使用 `appTextStyle(_:)`，因为它会同时应用字体、字距和行距。
 
 ### 使用公共组件
 
@@ -149,9 +181,96 @@ let percentage = AppNumberFormatter.percentage(0.824)
 let date = AppDateFormatter.string(from: .now)
 ```
 
-## 字体策略
+## 语义字体体系
 
-首版只提供系统字体令牌，避免把字体许可证和二进制资源默认传播到所有 App。
+这套字体体系源自 GoalMaster 的语义字体实践，并被改造成不包含具体 App 命名的公共 API。
+
+### 设计原则
+
+- 所有普通文本均基于系统 Text Style，自动参与 Dynamic Type。
+- 高强调标题、控件、徽章和指标使用 SF Rounded。
+- 正文与辅助说明使用默认 SF Pro 设计，保证长文本可读性。
+- 数值指标使用 monospaced digits，实时变化时不会造成布局跳动。
+- 字体负责表达信息层级，颜色继续由 `AppTheme` 表达品牌和状态。
+- 除 SF Symbol 几何尺寸外，业务文本不使用固定字号。
+
+### App 角色
+
+| Role | 用途 |
+| --- | --- |
+| `display` | Onboarding 宣言或少量活动型大标题 |
+| `pageTitle` | 页面主标题 |
+| `navigationTitle` | 内联工具栏标题 |
+| `heroTitle` | Hero 卡片中的主信息 |
+| `eyebrow` | 标题上方的模块或分类短标签 |
+| `sectionTitle` | 页面内主要分区标题 |
+| `cardTitle` | 卡片、目标、任务和事件名称 |
+| `body` | 正文、编辑器内容和主要说明 |
+| `supporting` | 副标题与补充解释 |
+| `metadata` | 日期、单位和进度上下文 |
+| `caption` | 三级说明和高密度辅助信息 |
+| `control` | 按钮、分段控件和紧凑操作 |
+| `badge` | 状态 Chip 与紧凑标签 |
+| `metricLarge` | Dashboard 主指标 |
+| `metric` | 卡片级指标 |
+| `metricCompact` | 倒计时和高密度数字 |
+
+### Widget 与 Live Activity 角色
+
+WidgetKit 和 ActivityKit 使用更紧凑的 `AppWidgetTypographyRole`：
+
+| Role | 用途 |
+| --- | --- |
+| `eyebrow` | 模块和状态短标签 |
+| `title` | Widget 或 Live Activity 标题 |
+| `body` | 主要紧凑文本 |
+| `supporting` | 副标题、任务名和日期 |
+| `caption` | 三级高密度信息 |
+| `control` | 交互式 Widget 控件标签 |
+| `metricLarge` | 锁屏主数值 |
+| `metric` | Widget 或展开灵动岛数值 |
+| `metricCompact` | Timer、计数和紧凑灵动岛数值 |
+
+使用方式：
+
+```swift
+struct ExampleWidgetContent: View {
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text("TODAY")
+                .appWidgetTextStyle(.eyebrow)
+
+            Text("7 tasks")
+                .appWidgetTextStyle(.metric)
+        }
+        .appWidgetTypographyScope()
+    }
+}
+```
+
+`appWidgetTypographyScope()` 应应用在每个 Widget 或 Live Activity 内容根节点。显式角色仍负责具体层级和数值样式。
+
+### 迁移建议
+
+把直接写在 Feature 中的字体：
+
+```swift
+Text(title)
+    .font(.system(.headline, design: .rounded, weight: .semibold))
+```
+
+替换为：
+
+```swift
+Text(title)
+    .appTextStyle(.cardTitle)
+```
+
+迁移不需要一次完成。先在根节点添加字体作用域，再在新代码或被修改的旧代码中逐步使用语义角色。
+
+## 自定义字体策略
+
+当前语义体系只使用系统字体，不引入字体文件、许可证风险或额外包体积。
 
 需要共享自定义字体时：
 
@@ -160,6 +279,7 @@ let date = AppDateFormatter.string(from: .now)
 3. 通过 `Bundle.module` 注册字体。
 4. 使用字体的 PostScript Name，而不是假设文件名就是字体名。
 5. 不要让不需要字体资源的 App 被迫下载该 Target。
+6. 自定义字体仍应映射到现有语义角色，而不是在 Feature 中直接指定字号。
 
 ## 抽取规则
 
