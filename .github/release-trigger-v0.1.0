@@ -1,1 +1,2 @@
-This file exists only to open the verified release trigger pull request for v0.1.0.
+This file exists only to trigger the verified v0.1.0 release workflow.
+Attempt: hosted Linux runner.
