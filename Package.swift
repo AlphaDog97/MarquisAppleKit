@@ -27,6 +27,10 @@ let package = Package(
         .testTarget(
             name: "AppDesignTokensTests",
             dependencies: ["AppDesignTokens"]
+        ),
+        .testTarget(
+            name: "AppDesignComponentsTests",
+            dependencies: ["AppDesignComponents"]
         )
     ]
 )

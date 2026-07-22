@@ -2,7 +2,7 @@
 
 `MarquisAppleKit` 是用于多个 Apple 平台 App 的私有 Swift Package，集中维护稳定、可复用的基础能力、设计令牌和 SwiftUI 基础组件。
 
-> 这个仓库只承载跨 App 的通用能力。业务模型、业务流程和仅服务于单个 App 的组件应保留在对应 App 仓库中。
+> 这个仓库只承载跨 App 的通用能力。业务模型、业务流程、持久化策略和仅服务于单个 App 的组件应保留在对应 App 仓库中。
 
 ## 模块
 
@@ -14,7 +14,7 @@
 - 日期、数字和百分比格式化
 - 统一日志封装 `AppLogger`
 - Collection 安全下标
-- iOS Haptic 封装
+- 跨平台安全的 Haptic 封装
 
 ### AppDesignTokens
 
@@ -38,6 +38,8 @@
 - `EmptyStateView`
 - `SettingsRow`
 - `MetricOverviewRow`
+- Coach Mark 聚光灯引导
+- Action Prompt 统一确认框
 
 依赖方向固定为：
 
@@ -171,6 +173,142 @@ struct ExampleView: View {
     }
 }
 ```
+
+## Coach Mark 聚光灯引导
+
+Coach Mark 源自 GoalMaster `vibe` 分支的页面级引导体系。公共包只负责目标注册、聚光灯、引导卡片和步骤推进；是否展示、版本号、完成状态和持久化由具体 App 决定。
+
+### 定义流程
+
+```swift
+import AppDesignComponents
+import SwiftUI
+
+private enum HomeCoachTarget {
+    static let create: CoachMarkTargetID = "home.create"
+    static let filter: CoachMarkTargetID = "home.filter"
+}
+
+private let homeCoachFlow = CoachMarkFlow(
+    id: "home.v1",
+    steps: [
+        CoachMarkStep(
+            id: "create",
+            targetID: HomeCoachTarget.create,
+            title: "Create something",
+            message: "Use this button to create your first item.",
+            iconSystemName: "plus.circle.fill",
+            preferredPlacement: .bottom
+        ),
+        CoachMarkStep(
+            id: "filter",
+            targetID: HomeCoachTarget.filter,
+            title: "Narrow the list",
+            message: "Filters help you focus on the items that matter now.",
+            iconSystemName: "line.3.horizontal.decrease.circle",
+            preferredPlacement: .top
+        )
+    ]
+)
+```
+
+### 注册目标并展示
+
+```swift
+struct HomeView: View {
+    @State private var coachMarkIndex: Int? = 0
+
+    var body: some View {
+        VStack {
+            Button("Create") { }
+                .coachMarkTarget(HomeCoachTarget.create)
+
+            Button("Filter") { }
+                .coachMarkTarget(HomeCoachTarget.filter)
+        }
+        .coachMarkFlow(
+            homeCoachFlow,
+            currentStepIndex: $coachMarkIndex,
+            onSkip: {
+                markHomeCoachFlowCompleted()
+            },
+            onCompletion: {
+                markHomeCoachFlowCompleted()
+            }
+        )
+    }
+
+    private func markHomeCoachFlowCompleted() {
+        // Persist completion in the App layer.
+    }
+}
+```
+
+注意事项：
+
+- `currentStepIndex == nil` 时不会展示引导。
+- `CoachMarkTargetID` 应使用稳定字符串，避免跟随页面文案变化。
+- 默认按钮文案为 `Skip`、`Next` 和 `Got it`，可通过 `CoachMarkLabels` 注入 App 自己的本地化 Key。
+- 当前步骤目标未注册时不会绘制 Overlay；这通常说明页面状态与流程配置不匹配。
+- 公共包不使用 `UserDefaults`、SwiftData 或 iCloud 保存完成状态。
+
+## Action Prompt 统一确认框
+
+Action Prompt 用于替代分散的自定义确认弹层，并保持跨 App 一致的视觉、Dynamic Type、VoiceOver 焦点、Reduce Motion 和 Haptic 行为。
+
+支持的样式：
+
+```text
+destructive
+warning
+info
+completion
+replacement
+```
+
+每个 Prompt 必须包含 1–3 个操作，并且最多只能有一个 `.cancel` 操作。
+
+```swift
+struct AccountView: View {
+    @State private var prompt: ActionPromptState?
+
+    var body: some View {
+        Button("Delete account") {
+            prompt = ActionPromptState(
+                style: .destructive,
+                title: "Delete account?",
+                message: "This action cannot be undone.",
+                detail: "Your synced data will also be removed.",
+                actions: [
+                    ActionPromptAction("Cancel", role: .cancel),
+                    ActionPromptAction(
+                        "Delete",
+                        role: .destructive
+                    ) {
+                        deleteAccount()
+                    }
+                ]
+            )
+        }
+        .actionPrompt($prompt)
+    }
+
+    private func deleteAccount() {
+        // Perform the business operation in the App layer.
+    }
+}
+```
+
+`ActionPromptState` 支持：
+
+- 默认或自定义 SF Symbol
+- 基于 `AppTheme` 的默认状态颜色
+- 单独传入 `accent`
+- 主操作、次操作、破坏性操作和取消操作
+- 可选背景点击关闭
+- iPhone/iPad 底部展示，macOS 与 Mac Catalyst 居中展示
+
+Prompt 的业务副作用只存在于 `ActionPromptAction` 闭包中，公共组件不访问业务模型。
 
 ### 格式化数据
 
@@ -323,11 +461,7 @@ Text(title)
 swift test
 ```
 
-由于 Package 包含 SwiftUI Target，完整构建和测试应在 macOS/Xcode 环境中运行。仓库的 GitHub Actions 会在 `macos-15` runner 上执行：
-
-```bash
-swift test
-```
+由于 Package 包含 SwiftUI Target，完整构建和测试应在 macOS/Xcode 环境中运行。仓库的 GitHub Actions 会在 macOS runner 上执行同一命令。
 
 开发远程 Package 时，可以在 Xcode 中使用本地 Package 替换远程依赖，完成验证后再发布版本标签。
 
