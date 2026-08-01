@@ -1,0 +1,25 @@
+name: Verify Share Preview iOS
+
+on:
+  pull_request:
+    paths:
+      - 'Sources/AppDesignComponents/SharePreview/**'
+      - '.github/workflows/verify-share-preview-ios.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build AppDesignComponents for iOS Simulator
+        run: |
+          SDK_PATH="$(xcrun --sdk iphonesimulator --show-sdk-path)"
+          swift build \
+            --product AppDesignComponents \
+            --sdk "$SDK_PATH" \
+            --triple arm64-apple-ios17.0-simulator
