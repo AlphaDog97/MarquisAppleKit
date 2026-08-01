@@ -1,0 +1,33 @@
+name: Release 0.2.0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/release-0.2.0.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Create semantic version tag
+        run: |
+          if git rev-parse "0.2.0" >/dev/null 2>&1; then
+            echo "Tag 0.2.0 already exists."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "0.2.0" -m "MarquisAppleKit 0.2.0"
+          git push origin "0.2.0"
