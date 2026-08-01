@@ -14,7 +14,8 @@
 - 增加字体 View Modifier、根作用域和等宽数字指标支持。
 - 增加可复用的 Coach Mark 聚光灯引导流程、目标注册和引导卡片。
 - 增加统一 Action Prompt 确认框，支持信息、警告、完成、替换和破坏性操作。
-- 增加 `AppDesignComponentsTests`，覆盖 Coach Mark 与 Action Prompt 公共模型。
+- 增加包含 App 图标、App 名称、自定义内容、系统分享与保存到照片操作的 `AppSharePreviewSheet`。
+- 增加 `AppDesignComponentsTests`，覆盖 Coach Mark、Action Prompt 与 Share Preview 公共模型。
 
 ### Changed
 
