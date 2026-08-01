@@ -1,6 +1,7 @@
 #if canImport(UIKit)
 import AppDesignTokens
 import SwiftUI
+import UIKit
 
 struct AppSharePreviewActionBar: View {
     let accent: Color
@@ -16,48 +17,27 @@ struct AppSharePreviewActionBar: View {
         }
     }
 
-    @ViewBuilder
     private var shareButton: some View {
-        if #available(iOS 26.0, *) {
-            Button(action: onShare) {
-                shareLabel
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.primary)
-            .glassEffect(.regular.interactive(), in: .capsule)
-        } else {
-            Button(action: onShare) {
-                shareLabel
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.primary)
-            .background(Color(uiColor: .secondarySystemBackground), in: Capsule())
-            .overlay {
-                Capsule()
-                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
-            }
+        Button(action: onShare) {
+            shareLabel
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+        .background(Color(uiColor: .secondarySystemBackground), in: Capsule())
+        .overlay {
+            Capsule()
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
         }
     }
 
-    @ViewBuilder
     private var saveButton: some View {
-        if #available(iOS 26.0, *) {
-            Button(action: onSave) {
-                saveLabel
-            }
-            .buttonStyle(.plain)
-            .disabled(isSaving)
-            .glassEffect(.regular.tint(accent).interactive(), in: .capsule)
-            .opacity(isSaving ? 0.72 : 1)
-        } else {
-            Button(action: onSave) {
-                saveLabel
-            }
-            .buttonStyle(.plain)
-            .disabled(isSaving)
-            .background(accent, in: Capsule())
-            .opacity(isSaving ? 0.72 : 1)
+        Button(action: onSave) {
+            saveLabel
         }
+        .buttonStyle(.plain)
+        .disabled(isSaving)
+        .background(accent, in: Capsule())
+        .opacity(isSaving ? 0.72 : 1)
     }
 
     private var shareLabel: some View {
