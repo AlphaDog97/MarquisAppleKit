@@ -145,9 +145,7 @@ public struct AppSharePreviewSheet<PreviewContent: View>: View {
     }
 
     private var sheetBackground: Color {
-        colorScheme == .dark
-            ? Color(uiColor: .systemBackground)
-            : Color(uiColor: .secondarySystemBackground)
+        appTheme.surface
     }
 
     private var renderWidth: CGFloat {
