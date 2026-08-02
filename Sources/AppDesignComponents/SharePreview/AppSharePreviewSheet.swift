@@ -15,6 +15,8 @@ public struct AppSharePreviewSheet<PreviewContent: View>: View {
     private let accent: Color
     private let labels: AppSharePreviewLabels
     private let contentWidth: CGFloat
+    private let exportTopPadding: CGFloat
+    private let backgroundView: AnyView?
     private let previewContent: PreviewContent
 
     @State private var activityImage: UIImage?
@@ -28,12 +30,33 @@ public struct AppSharePreviewSheet<PreviewContent: View>: View {
         accent: Color,
         labels: AppSharePreviewLabels = AppSharePreviewLabels(),
         contentWidth: CGFloat,
+        exportTopPadding: CGFloat = 0,
         @ViewBuilder content: () -> PreviewContent
     ) {
         self.brand = brand
         self.accent = accent
         self.labels = labels
         self.contentWidth = contentWidth
+        self.exportTopPadding = exportTopPadding
+        self.backgroundView = nil
+        self.previewContent = content()
+    }
+
+    public init<Background: View>(
+        brand: AppSharePreviewBrand = .current(),
+        accent: Color,
+        labels: AppSharePreviewLabels = AppSharePreviewLabels(),
+        contentWidth: CGFloat,
+        exportTopPadding: CGFloat = 0,
+        @ViewBuilder background: () -> Background,
+        @ViewBuilder content: () -> PreviewContent
+    ) {
+        self.brand = brand
+        self.accent = accent
+        self.labels = labels
+        self.contentWidth = contentWidth
+        self.exportTopPadding = exportTopPadding
+        self.backgroundView = AnyView(background())
         self.previewContent = content()
     }
 
@@ -58,7 +81,9 @@ public struct AppSharePreviewSheet<PreviewContent: View>: View {
                     }
                 }
             }
-            .background(sheetBackground.ignoresSafeArea())
+            .background {
+                sheetBackdrop.ignoresSafeArea()
+            }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 AppSharePreviewActionBar(
                     accent: accent,
@@ -105,7 +130,7 @@ public struct AppSharePreviewSheet<PreviewContent: View>: View {
     private func previewCard(screenWidth: CGFloat) -> some View {
         let scale = min(1, screenWidth / renderWidth)
 
-        return shareCard
+        return shareCard(additionalTopPadding: 0)
             .frame(width: renderWidth, alignment: .leading)
             .background {
                 GeometryReader { proxy in
@@ -129,9 +154,34 @@ public struct AppSharePreviewSheet<PreviewContent: View>: View {
             )
     }
 
-    private var shareCard: some View {
-        AppSharePreviewCard(brand: brand, accent: accent) {
-            previewContent
+    @ViewBuilder
+    private func shareCard(additionalTopPadding: CGFloat) -> some View {
+        if let backgroundView {
+            AppSharePreviewCard(
+                brand: brand,
+                accent: accent,
+                additionalTopPadding: additionalTopPadding,
+                background: { backgroundView }
+            ) {
+                previewContent
+            }
+        } else {
+            AppSharePreviewCard(
+                brand: brand,
+                accent: accent,
+                additionalTopPadding: additionalTopPadding
+            ) {
+                previewContent
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var sheetBackdrop: some View {
+        if let backgroundView {
+            backgroundView
+        } else {
+            appTheme.surface
         }
     }
 
@@ -144,10 +194,6 @@ public struct AppSharePreviewSheet<PreviewContent: View>: View {
             )
     }
 
-    private var sheetBackground: Color {
-        appTheme.surface
-    }
-
     private var renderWidth: CGFloat {
         contentWidth + AppSpacing.medium * 2
     }
@@ -155,7 +201,7 @@ public struct AppSharePreviewSheet<PreviewContent: View>: View {
     @MainActor
     private func makeImage() -> UIImage? {
         AppSharePreviewImageRenderer.render(
-            content: shareCard,
+            content: shareCard(additionalTopPadding: exportTopPadding),
             width: renderWidth,
             colorScheme: colorScheme,
             locale: locale,
