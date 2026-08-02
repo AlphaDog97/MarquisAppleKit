@@ -17,26 +17,57 @@ struct AppSharePreviewActionBar: View {
         }
     }
 
+    @ViewBuilder
     private var shareButton: some View {
+#if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            Button(action: onShare) {
+                shareLabel
+            }
+            .buttonStyle(.glassProminent)
+            .buttonBorderShape(.capsule)
+            .tint(.green)
+        } else {
+            legacyShareButton
+        }
+#else
+        legacyShareButton
+#endif
+    }
+
+    @ViewBuilder
+    private var saveButton: some View {
+#if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            Button(action: onSave) {
+                saveLabel
+            }
+            .buttonStyle(.glassProminent)
+            .buttonBorderShape(.capsule)
+            .tint(accent)
+            .disabled(isSaving)
+            .opacity(isSaving ? 0.72 : 1)
+        } else {
+            legacySaveButton
+        }
+#else
+        legacySaveButton
+#endif
+    }
+
+    private var legacyShareButton: some View {
         Button(action: onShare) {
             shareLabel
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(.primary)
-        .background(Color(uiColor: .secondarySystemBackground), in: Capsule())
-        .overlay {
-            Capsule()
-                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
-        }
+        .buttonStyle(AppSharePreviewLegacyGlassButtonStyle(tint: .green))
     }
 
-    private var saveButton: some View {
+    private var legacySaveButton: some View {
         Button(action: onSave) {
             saveLabel
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppSharePreviewLegacyGlassButtonStyle(tint: accent))
         .disabled(isSaving)
-        .background(accent, in: Capsule())
         .opacity(isSaving ? 0.72 : 1)
     }
 
@@ -44,6 +75,7 @@ struct AppSharePreviewActionBar: View {
         Text(labels.share)
             .appTextStyle(.control)
             .fontWeight(.semibold)
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .frame(height: AppSpacing.extraLarge + AppSpacing.small)
     }
@@ -65,6 +97,28 @@ struct AppSharePreviewActionBar: View {
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)
         .frame(height: AppSpacing.extraLarge + AppSpacing.small)
+    }
+}
+
+private struct AppSharePreviewLegacyGlassButtonStyle: ButtonStyle {
+    let tint: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                        Capsule()
+                            .fill(tint.opacity(configuration.isPressed ? 0.68 : 0.82))
+                    }
+                    .overlay {
+                        Capsule()
+                            .strokeBorder(Color.white.opacity(0.24), lineWidth: 1)
+                    }
+            }
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
     }
 }
 #endif
