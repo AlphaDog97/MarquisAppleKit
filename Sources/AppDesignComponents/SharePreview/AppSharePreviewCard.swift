@@ -3,7 +3,11 @@ import AppDesignTokens
 import SwiftUI
 import UIKit
 
-/// A branded, image-renderable container for app-defined share content.
+/// A branded, image-renderable layout for app-defined share content.
+///
+/// The layout intentionally does not add a rounded card, border, or shadow.
+/// This lets the supplied content appear directly in the preview sheet and in
+/// exported images without an additional visual container.
 public struct AppSharePreviewCard<Content: View>: View {
     @Environment(\.appTheme) private var appTheme
     @Environment(\.colorScheme) private var colorScheme
@@ -32,17 +36,6 @@ public struct AppSharePreviewCard<Content: View>: View {
         .padding(.bottom, AppSpacing.large)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(appTheme.surface)
-        .clipShape(cardShape)
-        .overlay {
-            cardShape
-                .strokeBorder(cardStrokeColor, lineWidth: 1)
-        }
-        .shadow(
-            color: Color.black.opacity(colorScheme == .dark ? 0.24 : 0.08),
-            radius: AppSpacing.medium,
-            x: 0,
-            y: AppSpacing.extraSmall
-        )
     }
 
     private var brandHeader: some View {
@@ -81,16 +74,8 @@ public struct AppSharePreviewCard<Content: View>: View {
         }
     }
 
-    private var cardShape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous)
-    }
-
     private var iconShape: RoundedRectangle {
         RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
-    }
-
-    private var cardStrokeColor: Color {
-        accent.opacity(colorScheme == .dark ? 0.34 : 0.22)
     }
 
     private var iconSize: CGFloat {
