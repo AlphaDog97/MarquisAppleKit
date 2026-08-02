@@ -19,8 +19,7 @@ public struct AppSharePreviewSheet<PreviewContent: View>: View {
     private let backgroundView: AnyView?
     private let previewContent: PreviewContent
 
-    @State private var activityImage: UIImage?
-    @State private var isShowingActivityView = false
+    @State private var activityItem: AppSharePreviewActivityItem?
     @State private var isSaving = false
     @State private var alertMessage: String?
     @State private var measuredPreviewHeight = UIScreen.main.bounds.height * 1.6
@@ -100,13 +99,8 @@ public struct AppSharePreviewSheet<PreviewContent: View>: View {
         }
         .presentationDetents([.fraction(0.82), .large])
         .presentationDragIndicator(.hidden)
-        .sheet(
-            isPresented: $isShowingActivityView,
-            onDismiss: { activityImage = nil }
-        ) {
-            if let activityImage {
-                AppSharePreviewActivityView(activityItems: [activityImage])
-            }
+        .sheet(item: $activityItem) { item in
+            AppSharePreviewActivityView(activityItems: [item.image])
         }
         .alert(
             labels.title,
@@ -216,8 +210,7 @@ public struct AppSharePreviewSheet<PreviewContent: View>: View {
             return
         }
 
-        activityImage = image
-        isShowingActivityView = true
+        activityItem = AppSharePreviewActivityItem(image: image)
     }
 
     @MainActor
@@ -245,6 +238,11 @@ public struct AppSharePreviewSheet<PreviewContent: View>: View {
             }
         }
     }
+}
+
+private struct AppSharePreviewActivityItem: Identifiable {
+    let id = UUID()
+    let image: UIImage
 }
 
 private struct AppSharePreviewHeightPreferenceKey: PreferenceKey {
