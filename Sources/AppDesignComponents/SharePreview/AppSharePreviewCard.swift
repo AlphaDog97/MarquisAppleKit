@@ -6,23 +6,42 @@ import UIKit
 /// A branded, image-renderable layout for app-defined share content.
 ///
 /// The layout intentionally does not add a rounded card, border, or shadow.
-/// This lets the supplied content appear directly in the preview sheet and in
-/// exported images without an additional visual container.
+/// Callers can provide a background view that fills the complete preview and
+/// exported image, including the brand header and outer padding.
 public struct AppSharePreviewCard<Content: View>: View {
     @Environment(\.appTheme) private var appTheme
     @Environment(\.colorScheme) private var colorScheme
 
     private let brand: AppSharePreviewBrand
     private let accent: Color
+    private let additionalTopPadding: CGFloat
+    private let backgroundView: AnyView?
     private let content: Content
 
     public init(
         brand: AppSharePreviewBrand = .current(),
         accent: Color,
+        additionalTopPadding: CGFloat = 0,
         @ViewBuilder content: () -> Content
     ) {
         self.brand = brand
         self.accent = accent
+        self.additionalTopPadding = additionalTopPadding
+        self.backgroundView = nil
+        self.content = content()
+    }
+
+    public init<Background: View>(
+        brand: AppSharePreviewBrand = .current(),
+        accent: Color,
+        additionalTopPadding: CGFloat = 0,
+        @ViewBuilder background: () -> Background,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.brand = brand
+        self.accent = accent
+        self.additionalTopPadding = additionalTopPadding
+        self.backgroundView = AnyView(background())
         self.content = content()
     }
 
@@ -32,10 +51,16 @@ public struct AppSharePreviewCard<Content: View>: View {
             content
         }
         .padding(.horizontal, AppSpacing.medium)
-        .padding(.top, AppSpacing.medium)
+        .padding(.top, AppSpacing.medium + max(0, additionalTopPadding))
         .padding(.bottom, AppSpacing.large)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(appTheme.surface)
+        .background {
+            if let backgroundView {
+                backgroundView
+            } else {
+                appTheme.surface
+            }
+        }
     }
 
     private var brandHeader: some View {
