@@ -21,3 +21,7 @@
 
 - 公共 SwiftUI 组件改用语义字体角色。
 - GoalMaster 的引导和确认框视觉实现已移除业务命名，并改用 `AppTheme` 与 `HapticFeedback`。
+
+### Fixed
+
+- Coach Mark Overlay 会在延伸到全屏前保留真实安全区，避免说明卡进入状态栏或灵动岛区域。
