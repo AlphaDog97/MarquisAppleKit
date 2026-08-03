@@ -28,10 +28,10 @@ private struct CoachMarkPresentationModifier: ViewModifier {
                             onSkip: skip,
                             onAdvance: advance
                         )
+                        .ignoresSafeArea()
                         .zIndex(20_000)
                     }
                 }
-                .ignoresSafeArea()
             }
             .animation(
                 reduceMotion
