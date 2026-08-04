@@ -13,24 +13,28 @@ private struct CoachMarkPresentationModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .overlayPreferenceValue(CoachMarkTargetPreferenceKey.self) { anchors in
-                GeometryReader { proxy in
-                    if let context = presentationContext(
-                        anchors: anchors,
-                        proxy: proxy
-                    ) {
-                        CoachMarkOverlay(
-                            step: context.step,
-                            isLastStep: context.index == context.stepCount - 1,
-                            labels: labels,
-                            targetRect: context.targetRect,
-                            containerSize: proxy.size,
-                            safeAreaInsets: proxy.safeAreaInsets,
-                            onSkip: skip,
-                            onAdvance: advance
-                        )
-                        .ignoresSafeArea()
-                        .zIndex(20_000)
+                GeometryReader { safeAreaProxy in
+                    let safeAreaInsets = safeAreaProxy.safeAreaInsets
+
+                    GeometryReader { fullScreenProxy in
+                        if let context = presentationContext(
+                            anchors: anchors,
+                            proxy: fullScreenProxy
+                        ) {
+                            CoachMarkOverlay(
+                                step: context.step,
+                                isLastStep: context.index == context.stepCount - 1,
+                                labels: labels,
+                                targetRect: context.targetRect,
+                                containerSize: fullScreenProxy.size,
+                                safeAreaInsets: safeAreaInsets,
+                                onSkip: skip,
+                                onAdvance: advance
+                            )
+                            .zIndex(20_000)
+                        }
                     }
+                    .ignoresSafeArea()
                 }
             }
             .animation(
