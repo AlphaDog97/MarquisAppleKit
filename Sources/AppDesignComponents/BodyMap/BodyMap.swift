@@ -1,9 +1,20 @@
 import SwiftUI
 
 public struct BodyMap: View {
-    private let model: BodyMapModel
+    private let configuration: BodyMapConfiguration
     private let appearance: BodyMapAppearance
     private let animation: BodyMapAnimationConfiguration
+
+    public init(
+        configuration: BodyMapConfiguration = .init(),
+        regions: [BodyMapRegionStyle],
+        appearance: BodyMapAppearance = .init(),
+        animation: BodyMapAnimationConfiguration = .init()
+    ) {
+        self.configuration = configuration
+        self.appearance = appearance.withRegions(regions)
+        self.animation = animation
+    }
 
     public init(
         model: BodyMapModel,
@@ -11,23 +22,26 @@ public struct BodyMap: View {
         appearance: BodyMapAppearance = .init(),
         animation: BodyMapAnimationConfiguration = .init()
     ) {
-        self.model = model
-        self.appearance = appearance.withRegions(regions)
-        self.animation = animation
+        self.init(
+            configuration: .init(model: model),
+            regions: regions,
+            appearance: appearance,
+            animation: animation
+        )
     }
 
     public init(
         appearance: BodyMapAppearance,
         animation: BodyMapAnimationConfiguration = .init()
     ) {
-        self.model = .male
+        self.configuration = .init()
         self.appearance = appearance
         self.animation = animation
     }
 
     public var body: some View {
         BodyMapRenderer(
-            model: model,
+            configuration: configuration,
             appearance: appearance,
             animation: animation
         )
