@@ -1,16 +1,16 @@
 import SwiftUI
 
 public struct BodyMapRenderer: View {
-    private let model: BodyMapModel
+    private let configuration: BodyMapConfiguration
     private let appearance: BodyMapAppearance
     private let animation: BodyMapAnimationConfiguration
 
     public init(
-        model: BodyMapModel,
+        configuration: BodyMapConfiguration,
         appearance: BodyMapAppearance,
         animation: BodyMapAnimationConfiguration
     ) {
-        self.model = model
+        self.configuration = configuration
         self.appearance = appearance
         self.animation = animation
     }
@@ -53,11 +53,7 @@ public struct BodyMapRenderer: View {
                 height: regionHeight
             )
 
-            drawRegion(
-                region,
-                frame: frame,
-                in: &context
-            )
+            drawRegion(region, frame: frame, in: &context)
         }
     }
 
