@@ -18,6 +18,7 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
     }
 
     public func updateUIView(_ uiView: MTKView, context: Context) {
+        context.coordinator.update(configuration: configuration)
     }
 
     public func makeCoordinator() -> Coordinator {
@@ -25,7 +26,7 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
     }
 
     public final class Coordinator {
-        private let configuration: BodyMapRendererConfiguration
+        private var configuration: BodyMapRendererConfiguration
         private var commandQueue: MTLCommandQueue?
         private var pipelineState: MTLRenderPipelineState?
         private var texture: MTLTexture?
@@ -40,10 +41,28 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
             }
 
             commandQueue = device.makeCommandQueue()
-            texture = BodyMapTextureLoader(device: device)
-                .loadTexture(named: "body_map_male")
+            reloadResources(device: device)
             pipelineState = makePipelineState(device: device, view: view)
             view.delegate = self
+        }
+
+        func update(configuration: BodyMapRendererConfiguration) {
+            guard self.configuration.textureName != configuration.textureName else {
+                return
+            }
+
+            self.configuration = configuration
+            guard let device = configuration.device else {
+                return
+            }
+
+            texture = BodyMapTextureLoader(device: device)
+                .loadTexture(named: configuration.textureName)
+        }
+
+        private func reloadResources(device: MTLDevice) {
+            texture = BodyMapTextureLoader(device: device)
+                .loadTexture(named: configuration.textureName)
         }
 
         private func makePipelineState(
@@ -95,12 +114,15 @@ extension BodyMapMetalRendererView.Coordinator: MTKViewDelegate {
 public final class BodyMapRendererConfiguration {
     public let device: MTLDevice?
     public let prefersMetalRendering: Bool
+    public let textureName: String
 
     public init(
         device: MTLDevice? = MTLCreateSystemDefaultDevice(),
-        prefersMetalRendering: Bool = true
+        prefersMetalRendering: Bool = true,
+        textureName: String = "body_map_male"
     ) {
         self.device = device
         self.prefersMetalRendering = prefersMetalRendering
+        self.textureName = textureName
     }
 }
