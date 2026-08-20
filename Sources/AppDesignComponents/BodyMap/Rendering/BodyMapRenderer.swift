@@ -1,29 +1,47 @@
 import SwiftUI
-import MetalKit
 
-public final class BodyMapRendererConfiguration {
-    public let prefersMetalRendering: Bool
+public struct BodyMapRenderer: View {
+    private let model: BodyMapModel
+    private let appearance: BodyMapAppearance
+    private let animation: BodyMapAnimationConfiguration
 
-    public init(prefersMetalRendering: Bool = true) {
-        self.prefersMetalRendering = prefersMetalRendering
-    }
-}
-
-public struct BodyMapMetalRendererView: UIViewRepresentable {
-    private let configuration: BodyMapRendererConfiguration
-
-    public init(configuration: BodyMapRendererConfiguration = .init()) {
-        self.configuration = configuration
-    }
-
-    public func makeUIView(context: Context) -> MTKView {
-        let view = MTKView()
-        view.device = MTLCreateSystemDefaultDevice()
-        view.isPaused = false
-        view.enableSetNeedsDisplay = false
-        return view
+    public init(
+        model: BodyMapModel,
+        appearance: BodyMapAppearance,
+        animation: BodyMapAnimationConfiguration
+    ) {
+        self.model = model
+        self.appearance = appearance
+        self.animation = animation
     }
 
-    public func updateUIView(_ uiView: MTKView, context: Context) {
+    public var body: some View {
+        ZStack {
+            appearance.backgroundColor
+
+            ForEach(appearance.regionStyles) { region in
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(region.color.opacity(region.fillOpacity))
+                    .overlay {
+                        if region.glow.opacity > 0 {
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(region.glow.color.opacity(region.glow.opacity))
+                                .blur(radius: region.glow.radius)
+                        }
+                    }
+                    .shadow(
+                        color: region.shadow.color.opacity(region.shadow.opacity),
+                        radius: region.shadow.radius
+                    )
+                    .opacity(animation.enabled ? region.revealFactor : 1)
+                    .scaleEffect(region.isSelected ? 1.03 : 1)
+                    .animation(
+                        animation.enabled
+                            ? .easeInOut(duration: animation.transitionDuration)
+                            : nil,
+                        value: region.isSelected
+                    )
+            }
+        }
     }
 }
