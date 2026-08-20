@@ -2,20 +2,25 @@ import MetalKit
 
 public final class BodyMapTextureLoader {
     private let device: MTLDevice
+    private let bundle: Bundle
 
-    public init(device: MTLDevice) {
+    public init(
+        device: MTLDevice,
+        bundle: Bundle = .module
+    ) {
         self.device = device
+        self.bundle = bundle
     }
 
     public func loadTexture(named name: String) -> MTLTexture? {
-        let loader = MTKTextureLoader(device: device)
-
-        guard let image = UIImage(named: name) else {
+        guard let url = bundle.url(forResource: name, withExtension: nil) else {
             return nil
         }
 
+        let loader = MTKTextureLoader(device: device)
+
         return try? loader.newTexture(
-            cgImage: image.cgImage,
+            URL: url,
             options: [
                 MTKTextureLoader.Option.SRGB: false
             ]
