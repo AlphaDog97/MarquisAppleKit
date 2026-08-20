@@ -36,10 +36,7 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
         }
 
         func setup(view: MTKView) {
-            guard let device = configuration.device else {
-                return
-            }
-
+            guard let device = configuration.device else { return }
             commandQueue = device.makeCommandQueue()
             reloadResources(device: device)
             pipelineState = makePipelineState(device: device, view: view)
@@ -47,13 +44,11 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
         }
 
         func update(configuration: BodyMapRendererConfiguration) {
-            guard self.configuration.textureName != configuration.textureName else {
-                self.configuration = configuration
-                return
-            }
-
+            let shouldReloadTexture = self.configuration.textureName != configuration.textureName
             self.configuration = configuration
-            guard let device = configuration.device else {
+
+            guard shouldReloadTexture,
+                  let device = configuration.device else {
                 return
             }
 
@@ -66,13 +61,8 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
                 .loadTexture(named: configuration.textureName)
         }
 
-        private func makePipelineState(
-            device: MTLDevice,
-            view: MTKView
-        ) -> MTLRenderPipelineState? {
-            guard let library = device.makeDefaultLibrary() else {
-                return nil
-            }
+        private func makePipelineState(device: MTLDevice, view: MTKView) -> MTLRenderPipelineState? {
+            guard let library = device.makeDefaultLibrary() else { return nil }
 
             let descriptor = MTLRenderPipelineDescriptor()
             descriptor.vertexFunction = library.makeFunction(name: "bodyMapVertex")
@@ -86,14 +76,11 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
 
 extension BodyMapMetalRendererView.Coordinator: MTKViewDelegate {
     public func draw(in view: MTKView) {
-        guard
-            let drawable = view.currentDrawable,
-            let descriptor = view.currentRenderPassDescriptor,
-            let commandBuffer = commandQueue?.makeCommandBuffer(),
-            let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor)
-        else {
-            return
-        }
+        guard let drawable = view.currentDrawable,
+              let descriptor = view.currentRenderPassDescriptor,
+              let commandBuffer = commandQueue?.makeCommandBuffer(),
+              let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor)
+        else { return }
 
         if let pipelineState {
             encoder.setRenderPipelineState(pipelineState)
@@ -116,24 +103,5 @@ extension BodyMapMetalRendererView.Coordinator: MTKViewDelegate {
     }
 
     public func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-    }
-}
-
-public final class BodyMapRendererConfiguration {
-    public let device: MTLDevice?
-    public let prefersMetalRendering: Bool
-    public let textureName: String
-    public let shaderConfiguration: BodyMapShaderConfiguration
-
-    public init(
-        device: MTLDevice? = MTLCreateSystemDefaultDevice(),
-        prefersMetalRendering: Bool = true,
-        textureName: String = "body_map_male",
-        shaderConfiguration: BodyMapShaderConfiguration = .init()
-    ) {
-        self.device = device
-        self.prefersMetalRendering = prefersMetalRendering
-        self.textureName = textureName
-        self.shaderConfiguration = shaderConfiguration
     }
 }
