@@ -1,14 +1,14 @@
 import MetalKit
 import SwiftUI
 
-public struct BodyMapMetalRendererView: UIViewRepresentable {
+struct BodyMapMetalRendererView: UIViewRepresentable {
     private let configuration: BodyMapRendererConfiguration
 
-    public init(configuration: BodyMapRendererConfiguration = .init()) {
+    init(configuration: BodyMapRendererConfiguration = .init()) {
         self.configuration = configuration
     }
 
-    public func makeUIView(context: Context) -> MTKView {
+    func makeUIView(context: Context) -> MTKView {
         let view = MTKView()
         view.device = configuration.device
         view.framebufferOnly = false
@@ -17,15 +17,15 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
         return view
     }
 
-    public func updateUIView(_ uiView: MTKView, context: Context) {
+    func updateUIView(_ uiView: MTKView, context: Context) {
         context.coordinator.update(configuration: configuration)
     }
 
-    public func makeCoordinator() -> Coordinator {
+    func makeCoordinator() -> Coordinator {
         Coordinator(configuration: configuration)
     }
 
-    public final class Coordinator {
+    final class Coordinator {
         private var configuration: BodyMapRendererConfiguration
         private var commandQueue: MTLCommandQueue?
         private var pipelineState: MTLRenderPipelineState?
@@ -75,7 +75,7 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
 }
 
 extension BodyMapMetalRendererView.Coordinator: MTKViewDelegate {
-    public func draw(in view: MTKView) {
+    func draw(in view: MTKView) {
         guard let drawable = view.currentDrawable,
               let descriptor = view.currentRenderPassDescriptor,
               let commandBuffer = commandQueue?.makeCommandBuffer(),
@@ -102,6 +102,6 @@ extension BodyMapMetalRendererView.Coordinator: MTKViewDelegate {
         commandBuffer.commit()
     }
 
-    public func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
     }
 }
