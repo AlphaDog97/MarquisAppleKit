@@ -1,9 +1,9 @@
 import Foundation
 
-public struct BodyMapResourceResolver {
-    public init() {}
+struct BodyMapResourceResolver {
+    init() {}
 
-    public func textureName(for model: BodyMapModel) -> String {
+    func textureName(for model: BodyMapModel) -> String {
         switch model {
         case .male:
             return "body_map_male"
