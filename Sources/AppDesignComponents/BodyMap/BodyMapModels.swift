@@ -1,11 +1,11 @@
 import SwiftUI
 
-public enum BodyMapModel: Sendable {
+public enum BodyMapModel {
     case male
     case female
 }
 
-public struct BodyMapRegionID: Hashable, Sendable, RawRepresentable {
+public struct BodyMapRegionID: Hashable, RawRepresentable {
     public let rawValue: String
 
     public init(rawValue: String) {
@@ -41,7 +41,7 @@ public struct BodyMapRegionStyle: Identifiable {
     }
 }
 
-public struct BodyMapGlowStyle: Sendable {
+public struct BodyMapGlowStyle {
     public let color: Color
     public let opacity: Double
     public let radius: CGFloat
@@ -63,7 +63,7 @@ public struct BodyMapGlowStyle: Sendable {
     }
 }
 
-public struct BodyMapShadowStyle: Sendable {
+public struct BodyMapShadowStyle {
     public let color: Color
     public let opacity: Double
     public let radius: CGFloat
@@ -82,7 +82,7 @@ public struct BodyMapShadowStyle: Sendable {
     }
 }
 
-public struct BodyMapAnimationConfiguration: Sendable {
+public struct BodyMapAnimationConfiguration {
     public let enabled: Bool
     public let revealDuration: Double
     public let transitionDuration: Double
