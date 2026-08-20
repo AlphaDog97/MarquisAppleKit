@@ -27,6 +27,7 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
     public final class Coordinator {
         private let configuration: BodyMapRendererConfiguration
         private var commandQueue: MTLCommandQueue?
+        private var pipelineState: MTLRenderPipelineState?
 
         init(configuration: BodyMapRendererConfiguration) {
             self.configuration = configuration
@@ -38,7 +39,24 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
             }
 
             commandQueue = device.makeCommandQueue()
+            pipelineState = makePipelineState(device: device, view: view)
             view.delegate = self
+        }
+
+        private func makePipelineState(
+            device: MTLDevice,
+            view: MTKView
+        ) -> MTLRenderPipelineState? {
+            guard let library = device.makeDefaultLibrary() else {
+                return nil
+            }
+
+            let descriptor = MTLRenderPipelineDescriptor()
+            descriptor.vertexFunction = library.makeFunction(name: "bodyMapVertex")
+            descriptor.fragmentFunction = library.makeFunction(name: "bodyMapFragment")
+            descriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
+
+            return try? device.makeRenderPipelineState(descriptor: descriptor)
         }
     }
 }
@@ -48,14 +66,17 @@ extension BodyMapMetalRendererView.Coordinator: MTKViewDelegate {
         guard
             let drawable = view.currentDrawable,
             let descriptor = view.currentRenderPassDescriptor,
-            let commandBuffer = commandQueue?.makeCommandBuffer()
+            let commandBuffer = commandQueue?.makeCommandBuffer(),
+            let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor)
         else {
             return
         }
 
-        let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor)
-        encoder?.endEncoding()
+        if let pipelineState {
+            encoder.setRenderPipelineState(pipelineState)
+        }
 
+        encoder.endEncoding()
         commandBuffer.present(drawable)
         commandBuffer.commit()
     }
