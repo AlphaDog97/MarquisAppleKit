@@ -1,11 +1,11 @@
 import SwiftUI
 
-public struct BodyMapRenderer: View {
+struct BodyMapRenderer: View {
     private let configuration: BodyMapConfiguration
     private let appearance: BodyMapAppearance
     private let animation: BodyMapAnimationConfiguration
 
-    public init(
+    init(
         configuration: BodyMapConfiguration,
         appearance: BodyMapAppearance,
         animation: BodyMapAnimationConfiguration
@@ -15,7 +15,7 @@ public struct BodyMapRenderer: View {
         self.animation = animation
     }
 
-    public var body: some View {
+    var body: some View {
         Canvas { context, size in
             renderBackground(in: &context, size: size)
             renderRegions(in: &context, size: size)
