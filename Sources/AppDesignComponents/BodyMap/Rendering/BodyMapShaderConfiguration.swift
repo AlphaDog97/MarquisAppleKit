@@ -1,11 +1,11 @@
 import Foundation
 
-public struct BodyMapShaderUniform {
-    public var intensity: Float
-    public var glowEnergy: Float
-    public var shadowEnergy: Float
+struct BodyMapShaderUniform {
+    var intensity: Float
+    var glowEnergy: Float
+    var shadowEnergy: Float
 
-    public init(
+    init(
         intensity: Float,
         glowEnergy: Float,
         shadowEnergy: Float
@@ -31,7 +31,7 @@ public struct BodyMapShaderConfiguration: Sendable {
         self.shadowEnergy = shadowEnergy
     }
 
-    public var metalUniform: BodyMapShaderUniform {
+    var metalUniform: BodyMapShaderUniform {
         BodyMapShaderUniform(
             intensity: Float(intensity),
             glowEnergy: Float(glowEnergy),

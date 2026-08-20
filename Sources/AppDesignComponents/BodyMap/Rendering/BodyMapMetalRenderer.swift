@@ -25,7 +25,8 @@ struct BodyMapMetalRendererView: UIViewRepresentable {
         Coordinator(configuration: configuration)
     }
 
-    final class Coordinator {
+    @MainActor
+    final class Coordinator: NSObject {
         private var configuration: BodyMapRendererConfiguration
         private var commandQueue: MTLCommandQueue?
         private var pipelineState: MTLRenderPipelineState?

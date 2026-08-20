@@ -1,14 +1,11 @@
 import Foundation
 
-public struct BodyMapResourceConfiguration {
+public struct BodyMapResourceConfiguration: Sendable {
     public let model: BodyMapModel
-    public let textureName: String
+    let textureName: String
 
-    public init(
-        model: BodyMapModel,
-        resolver: BodyMapResourceResolver = .init()
-    ) {
+    public init(model: BodyMapModel) {
         self.model = model
-        self.textureName = resolver.textureName(for: model)
+        self.textureName = BodyMapResourceResolver().textureName(for: model)
     }
 }

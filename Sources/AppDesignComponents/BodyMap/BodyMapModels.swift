@@ -1,11 +1,11 @@
 import SwiftUI
 
-public enum BodyMapModel {
+public enum BodyMapModel: Sendable {
     case male
     case female
 }
 
-public struct BodyMapRegionID: Hashable, RawRepresentable {
+public struct BodyMapRegionID: Hashable, RawRepresentable, Sendable {
     public let rawValue: String
 
     public init(rawValue: String) {
