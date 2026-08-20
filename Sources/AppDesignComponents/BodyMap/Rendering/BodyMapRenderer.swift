@@ -16,32 +16,73 @@ public struct BodyMapRenderer: View {
     }
 
     public var body: some View {
-        ZStack {
-            appearance.backgroundColor
+        Canvas { context, size in
+            renderBackground(in: &context, size: size)
+            renderRegions(in: &context, size: size)
+        }
+        .animation(
+            animation.enabled
+                ? .easeInOut(duration: animation.transitionDuration)
+                : nil,
+            value: appearance.regionStyles.map(\.id)
+        )
+    }
 
-            ForEach(appearance.regionStyles) { region in
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(region.color.opacity(region.fillOpacity))
-                    .overlay {
-                        if region.glow.opacity > 0 {
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(region.glow.color.opacity(region.glow.opacity))
-                                .blur(radius: region.glow.radius)
-                        }
-                    }
-                    .shadow(
-                        color: region.shadow.color.opacity(region.shadow.opacity),
-                        radius: region.shadow.radius
-                    )
-                    .opacity(animation.enabled ? region.revealFactor : 1)
-                    .scaleEffect(region.isSelected ? 1.03 : 1)
-                    .animation(
-                        animation.enabled
-                            ? .easeInOut(duration: animation.transitionDuration)
-                            : nil,
-                        value: region.isSelected
-                    )
-            }
+    private func renderBackground(
+        in context: inout GraphicsContext,
+        size: CGSize
+    ) {
+        context.fill(
+            Path(CGRect(origin: .zero, size: size)),
+            with: .color(appearance.backgroundColor)
+        )
+    }
+
+    private func renderRegions(
+        in context: inout GraphicsContext,
+        size: CGSize
+    ) {
+        let regionCount = max(appearance.regionStyles.count, 1)
+        let regionHeight = size.height / CGFloat(regionCount)
+
+        for (index, region) in appearance.regionStyles.enumerated() {
+            let frame = CGRect(
+                x: 0,
+                y: CGFloat(index) * regionHeight,
+                width: size.width,
+                height: regionHeight
+            )
+
+            drawRegion(
+                region,
+                frame: frame,
+                in: &context
+            )
+        }
+    }
+
+    private func drawRegion(
+        _ region: BodyMapRegionStyle,
+        frame: CGRect,
+        in context: inout GraphicsContext
+    ) {
+        var path = Path()
+        path.addRoundedRect(
+            in: frame,
+            cornerSize: CGSize(width: 12, height: 12)
+        )
+
+        context.fill(
+            path,
+            with: .color(region.color.opacity(region.fillOpacity))
+        )
+
+        if region.glow.opacity > 0 {
+            context.stroke(
+                path,
+                with: .color(region.glow.color.opacity(region.glow.opacity)),
+                lineWidth: region.glow.radius
+            )
         }
     }
 }
