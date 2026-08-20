@@ -1,24 +1,31 @@
 import SwiftUI
 
-struct BodyMapRenderer: View {
-    private let configuration: BodyMapConfiguration
+public struct BodyMapRenderer: View {
+    private let model: BodyMapModel
     private let appearance: BodyMapAppearance
     private let animation: BodyMapAnimationConfiguration
 
-    init(
-        configuration: BodyMapConfiguration,
+    public init(
+        model: BodyMapModel,
         appearance: BodyMapAppearance,
         animation: BodyMapAnimationConfiguration
     ) {
-        self.configuration = configuration
+        self.model = model
         self.appearance = appearance
         self.animation = animation
     }
 
-    var body: some View {
+    public var body: some View {
         Canvas { context, size in
-            renderBackground(in: &context, size: size)
-            renderRegions(in: &context, size: size)
+            renderBackground(
+                context: &context,
+                size: size
+            )
+
+            renderRegions(
+                context: &context,
+                size: size
+            )
         }
         .animation(
             animation.enabled
@@ -29,7 +36,7 @@ struct BodyMapRenderer: View {
     }
 
     private func renderBackground(
-        in context: inout GraphicsContext,
+        context: inout GraphicsContext,
         size: CGSize
     ) {
         context.fill(
@@ -39,33 +46,41 @@ struct BodyMapRenderer: View {
     }
 
     private func renderRegions(
-        in context: inout GraphicsContext,
+        context: inout GraphicsContext,
         size: CGSize
     ) {
-        let regionCount = max(appearance.regionStyles.count, 1)
-        let regionHeight = size.height / CGFloat(regionCount)
+        let regionSize = CGSize(
+            width: size.width * 0.18,
+            height: size.height * 0.08
+        )
 
         for (index, region) in appearance.regionStyles.enumerated() {
-            let frame = CGRect(
-                x: 0,
-                y: CGFloat(index) * regionHeight,
-                width: size.width,
-                height: regionHeight
+            let origin = CGPoint(
+                x: size.width * 0.41,
+                y: CGFloat(index) * regionSize.height * 1.3
             )
 
-            drawRegion(region, frame: frame, in: &context)
+            let rect = CGRect(
+                origin: origin,
+                size: regionSize
+            )
+
+            drawRegion(
+                context: &context,
+                region: region,
+                rect: rect
+            )
         }
     }
 
     private func drawRegion(
-        _ region: BodyMapRegionStyle,
-        frame: CGRect,
-        in context: inout GraphicsContext
+        context: inout GraphicsContext,
+        region: BodyMapRegionStyle,
+        rect: CGRect
     ) {
-        var path = Path()
-        path.addRoundedRect(
-            in: frame,
-            cornerSize: CGSize(width: 12, height: 12)
+        let path = Path(
+            roundedRect: rect,
+            cornerRadius: 12
         )
 
         context.fill(
@@ -74,10 +89,13 @@ struct BodyMapRenderer: View {
         )
 
         if region.glow.opacity > 0 {
+            context.addFilter(
+                .blur(radius: region.glow.radius)
+            )
+
             context.stroke(
                 path,
-                with: .color(region.glow.color.opacity(region.glow.opacity)),
-                lineWidth: region.glow.radius
+                with: .color(region.glow.color.opacity(region.glow.opacity))
             )
         }
     }
