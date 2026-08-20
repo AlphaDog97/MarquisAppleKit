@@ -6,8 +6,14 @@ struct BodyMapVertexOut {
     float2 textureCoordinate;
 };
 
+struct BodyMapShaderUniform {
+    float intensity;
+    float glowEnergy;
+    float shadowEnergy;
+};
+
 vertex BodyMapVertexOut bodyMapVertex(uint vertexID [[vertex_id]]) {
-    float2 positions[4] = {
+    constexpr float2 positions[4] = {
         float2(-1.0, -1.0),
         float2(1.0, -1.0),
         float2(-1.0, 1.0),
@@ -23,9 +29,14 @@ vertex BodyMapVertexOut bodyMapVertex(uint vertexID [[vertex_id]]) {
 fragment float4 bodyMapFragment(
     BodyMapVertexOut input [[stage_in]],
     texture2d<float> bodyTexture [[texture(0)]],
-    constant float &intensity [[buffer(0)]]
+    constant BodyMapShaderUniform& uniform [[buffer(1)]]
 ) {
     constexpr sampler sampler(filter::linear);
+
     float4 color = bodyTexture.sample(sampler, input.textureCoordinate);
-    return float4(color.rgb * intensity, color.a);
+    color.rgb *= uniform.intensity;
+    color.rgb += uniform.glowEnergy;
+    color.rgb *= (1.0 - uniform.shadowEnergy);
+
+    return color;
 }
