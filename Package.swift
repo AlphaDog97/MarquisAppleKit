@@ -18,7 +18,10 @@ let package = Package(
         .target(name: "AppDesignTokens"),
         .target(
             name: "AppDesignComponents",
-            dependencies: ["AppCore", "AppDesignTokens"]
+            dependencies: ["AppCore", "AppDesignTokens"],
+            resources: [
+                .process("Resources")
+            ]
         ),
         .testTarget(
             name: "AppCoreTests",
