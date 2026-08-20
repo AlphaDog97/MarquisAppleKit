@@ -28,6 +28,7 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
         private let configuration: BodyMapRendererConfiguration
         private var commandQueue: MTLCommandQueue?
         private var pipelineState: MTLRenderPipelineState?
+        private var texture: MTLTexture?
 
         init(configuration: BodyMapRendererConfiguration) {
             self.configuration = configuration
@@ -39,6 +40,8 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
             }
 
             commandQueue = device.makeCommandQueue()
+            texture = BodyMapTextureLoader(device: device)
+                .loadTexture(named: "body_map_male")
             pipelineState = makePipelineState(device: device, view: view)
             view.delegate = self
         }
@@ -74,6 +77,10 @@ extension BodyMapMetalRendererView.Coordinator: MTKViewDelegate {
 
         if let pipelineState {
             encoder.setRenderPipelineState(pipelineState)
+        }
+
+        if let texture {
+            encoder.setFragmentTexture(texture, index: 0)
         }
 
         encoder.endEncoding()
