@@ -18,4 +18,12 @@ public struct BodyMapAppearance {
     public func style(for region: BodyMapRegionID) -> BodyMapRegionStyle? {
         regionStyles.first { $0.id == region }
     }
+
+    func withRegions(_ regions: [BodyMapRegionStyle]) -> BodyMapAppearance {
+        BodyMapAppearance(
+            inactiveColor: inactiveColor,
+            backgroundColor: backgroundColor,
+            regionStyles: regions
+        )
+    }
 }
