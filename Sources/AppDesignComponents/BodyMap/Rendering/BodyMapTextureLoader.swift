@@ -1,10 +1,10 @@
 import MetalKit
 
-public final class BodyMapTextureLoader {
+final class BodyMapTextureLoader {
     private let device: MTLDevice
     private let bundle: Bundle
 
-    public init(
+    init(
         device: MTLDevice,
         bundle: Bundle = .module
     ) {
@@ -12,7 +12,7 @@ public final class BodyMapTextureLoader {
         self.bundle = bundle
     }
 
-    public func loadTexture(named name: String) -> MTLTexture? {
+    func loadTexture(named name: String) -> MTLTexture? {
         guard let url = bundle.url(forResource: name, withExtension: nil) else {
             return nil
         }
