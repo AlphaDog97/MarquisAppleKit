@@ -48,6 +48,7 @@ public struct BodyMapMetalRendererView: UIViewRepresentable {
 
         func update(configuration: BodyMapRendererConfiguration) {
             guard self.configuration.textureName != configuration.textureName else {
+                self.configuration = configuration
                 return
             }
 
@@ -102,6 +103,13 @@ extension BodyMapMetalRendererView.Coordinator: MTKViewDelegate {
             encoder.setFragmentTexture(texture, index: 0)
         }
 
+        var shader = configuration.shaderConfiguration.metalUniform
+        encoder.setFragmentBytes(
+            &shader,
+            length: MemoryLayout<BodyMapShaderUniform>.stride,
+            index: 1
+        )
+
         encoder.endEncoding()
         commandBuffer.present(drawable)
         commandBuffer.commit()
@@ -115,14 +123,17 @@ public final class BodyMapRendererConfiguration {
     public let device: MTLDevice?
     public let prefersMetalRendering: Bool
     public let textureName: String
+    public let shaderConfiguration: BodyMapShaderConfiguration
 
     public init(
         device: MTLDevice? = MTLCreateSystemDefaultDevice(),
         prefersMetalRendering: Bool = true,
-        textureName: String = "body_map_male"
+        textureName: String = "body_map_male",
+        shaderConfiguration: BodyMapShaderConfiguration = .init()
     ) {
         self.device = device
         self.prefersMetalRendering = prefersMetalRendering
         self.textureName = textureName
+        self.shaderConfiguration = shaderConfiguration
     }
 }
