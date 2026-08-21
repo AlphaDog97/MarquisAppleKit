@@ -60,7 +60,7 @@ struct BodyMapSideView: View {
                 )
             )
             .foregroundStyle(appearance.inactiveColor)
-            .opacity(0.10)
+            .opacity(appearance.baseOpacity)
 
             glowLayer
                 .blendMode(.screen)
