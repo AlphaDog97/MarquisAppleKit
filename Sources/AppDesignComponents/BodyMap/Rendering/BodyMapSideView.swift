@@ -1,9 +1,12 @@
 import SwiftUI
 
 struct BodyMapSideView: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     let side: BodyMapAnatomySide
     let configuration: BodyMapConfiguration
     let appearance: BodyMapAppearance
+    let animation: BodyMapAnimationConfiguration
     let onRegionTap: ((BodyMapRegionID) -> Void)?
 
     private var assets: [BodyMapAnatomyAsset] {
@@ -11,6 +14,29 @@ struct BodyMapSideView: View {
     }
 
     var body: some View {
+        ZStack {
+            visualLayer
+            interactionLayer
+        }
+        .aspectRatio(309.014 / 800, contentMode: .fit)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private var visualLayer: some View {
+        #if canImport(UIKit)
+        BodyMapMetalSurface(
+            state: BodyMapMetalRenderStateBuilder.make(
+                side: side,
+                configuration: configuration,
+                appearance: appearance,
+                colorScheme: colorScheme
+            ),
+            bundle: configuration.resources.bundle,
+            animation: animation
+        )
+        .accessibilityHidden(true)
+        #else
         ZStack {
             anatomyImage(
                 BodyMapAnatomyAssetResolver.baseShapeAssetName(
@@ -25,11 +51,8 @@ struct BodyMapSideView: View {
                 .blendMode(.screen)
 
             fillLayer
-
-            interactionLayer
         }
-        .aspectRatio(309.014 / 800, contentMode: .fit)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #endif
     }
 
     private var glowLayer: some View {
