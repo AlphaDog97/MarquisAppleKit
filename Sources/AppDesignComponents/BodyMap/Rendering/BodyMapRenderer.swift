@@ -25,6 +25,7 @@ struct BodyMapRenderer: View {
                     side: side,
                     configuration: configuration,
                     appearance: appearance,
+                    animation: animation,
                     onRegionTap: onRegionTap
                 )
             }
