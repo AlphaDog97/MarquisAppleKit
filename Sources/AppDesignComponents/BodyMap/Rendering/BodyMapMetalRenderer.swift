@@ -1,4 +1,5 @@
 #if canImport(UIKit)
+import Foundation
 import MetalKit
 import QuartzCore
 
@@ -7,6 +8,7 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
 
     private let resources: BodyMapMetalResources
     private let textureLoader: BodyMapTextureLoader
+    private let blurBuilder: BodyMapBlurTextureBuilder
     private weak var view: MTKView?
 
     private var targetState: BodyMapMetalRenderState?
@@ -14,7 +16,6 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
     private var maskSet: BodyMapMaskTextureSet?
     private var blurSet: BodyMapBlurTextureSet?
     private var blurConfiguration: BlurConfiguration?
-    private var resourceBundle: Bundle = .main
     private var resourceBundlePath = Bundle.main.bundlePath
 
     override init() {
@@ -22,6 +23,7 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
         self.resources = resources
         self.device = resources.device
         self.textureLoader = BodyMapTextureLoader(resources: resources)
+        self.blurBuilder = BodyMapBlurTextureBuilder(resources: resources)
         super.init()
     }
 
@@ -43,7 +45,6 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
             || maskSet?.model != state.model
             || maskSet?.side != state.side
 
-        resourceBundle = bundle
         resourceBundlePath = bundle.bundlePath
 
         if masksChanged {
@@ -193,7 +194,7 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
 
         let pixelsPerPoint = Float(maskSet.width) / Float(view.bounds.width)
         do {
-            blurSet = try textureLoader.makeBlurTextures(
+            blurSet = try blurBuilder.makeTextures(
                 from: maskSet.masks,
                 glowRadius: state.glowRadius * pixelsPerPoint,
                 shadowRadius: state.shadowRadius * pixelsPerPoint,
