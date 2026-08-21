@@ -56,58 +56,43 @@ enum BodyMapHitTester {
             model: model,
             asset: asset
         )
-        guard let image = UIImage(
-            named: assetName,
-            in: bundle,
-            compatibleWith: nil
-        ) else {
+
+        let mask: BodyMapMaskBitmap
+        do {
+            if let pdfURL = BodyMapResourceResolver().pdfURL(
+                named: assetName,
+                bundle: bundle
+            ) {
+                mask = try BodyMapMaskRasterizer.rasterizePDF(
+                    at: pdfURL,
+                    scale: 1
+                )
+            } else if let image = UIImage(
+                named: assetName,
+                in: bundle,
+                compatibleWith: nil
+            ) {
+                mask = try BodyMapMaskRasterizer.rasterize(
+                    image,
+                    scale: 1
+                )
+            } else {
+                return false
+            }
+        } catch {
             return false
         }
 
-        let format = UIGraphicsImageRendererFormat()
-        format.opaque = false
-        format.preferredRange = .standard
-        format.scale = 1
-
-        let renderer = UIGraphicsImageRenderer(
-            size: CGSize(width: 1, height: 1),
-            format: format
+        let x = min(
+            max(Int(normalizedPoint.x * CGFloat(mask.width)), 0),
+            mask.width - 1
         )
-        let sampledImage = renderer.image { context in
-            let width = image.size.width
-            let height = image.size.height
-            context.cgContext.translateBy(
-                x: 0.5 - normalizedPoint.x * width,
-                y: 0.5 - normalizedPoint.y * height
-            )
-            image.draw(in: CGRect(x: 0, y: 0, width: width, height: height))
-        }
+        let y = min(
+            max(Int(normalizedPoint.y * CGFloat(mask.height)), 0),
+            mask.height - 1
+        )
 
-        guard let sample = sampledImage.cgImage else { return false }
-
-        var pixel = [UInt8](repeating: 0, count: 4)
-        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
-            | CGBitmapInfo.byteOrder32Big.rawValue
-
-        let didRender = pixel.withUnsafeMutableBytes { bytes -> Bool in
-            guard let context = CGContext(
-                data: bytes.baseAddress,
-                width: 1,
-                height: 1,
-                bitsPerComponent: 8,
-                bytesPerRow: 4,
-                space: CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: bitmapInfo
-            ) else {
-                return false
-            }
-
-            context.interpolationQuality = .none
-            context.draw(sample, in: CGRect(x: 0, y: 0, width: 1, height: 1))
-            return true
-        }
-
-        return didRender && pixel[3] > 24
+        return mask.bytes[y * mask.width + x] > 24
     }
     #endif
 }
