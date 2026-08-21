@@ -61,13 +61,15 @@ struct BodyMapSideView: View {
 
     private var glowLayer: some View {
         ZStack {
-            ForEach(assets) { asset in
-                if let style = appearance.style(for: asset.region),
-                   style.glow.opacity > 0 {
-                    anatomyImage(assetName(for: asset))
-                        .foregroundStyle(style.glow.color)
-                        .opacity(glowOpacity(for: style))
-                        .blur(radius: style.glow.radius)
+            if appearance.glowEnabled {
+                ForEach(assets) { asset in
+                    if let style = appearance.style(for: asset.region),
+                       style.glow.opacity > 0 {
+                        anatomyImage(assetName(for: asset))
+                            .foregroundStyle(style.glow.color)
+                            .opacity(glowOpacity(for: style))
+                            .blur(radius: style.glow.radius)
+                    }
                 }
             }
         }
