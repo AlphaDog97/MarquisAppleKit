@@ -21,6 +21,7 @@ final class BodyMapTextureLoader {
 
     private let device: MTLDevice
     private let cache: BodyMapMetalTextureCache
+    private let resourceResolver = BodyMapResourceResolver()
 
     init(
         resources: BodyMapMetalResources,
@@ -96,12 +97,18 @@ final class BodyMapTextureLoader {
         named name: String,
         bundle: Bundle
     ) throws -> BodyMapMaskBitmap {
-        guard let image = UIImage(named: name, in: bundle, compatibleWith: nil) else {
-            throw LoadingError.missingAsset(name)
-        }
-
         do {
-            return try BodyMapMaskRasterizer.rasterize(image)
+            if let pdfURL = resourceResolver.pdfURL(named: name, bundle: bundle) {
+                return try BodyMapMaskRasterizer.rasterizePDF(at: pdfURL)
+            }
+
+            if let image = UIImage(named: name, in: bundle, compatibleWith: nil) {
+                return try BodyMapMaskRasterizer.rasterize(image)
+            }
+
+            throw LoadingError.missingAsset(name)
+        } catch let error as LoadingError {
+            throw error
         } catch {
             throw LoadingError.rasterizationFailed(name, error)
         }
