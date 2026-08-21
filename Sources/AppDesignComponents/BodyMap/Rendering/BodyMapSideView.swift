@@ -1,5 +1,9 @@
 import SwiftUI
 
+#if canImport(AppKit)
+import AppKit
+#endif
+
 struct BodyMapSideView: View {
     @Environment(\.colorScheme) private var colorScheme
 
@@ -121,12 +125,32 @@ struct BodyMapSideView: View {
         )
     }
 
+    @ViewBuilder
     private func anatomyImage(_ name: String) -> some View {
+        #if canImport(AppKit)
+        if let url = BodyMapResourceResolver().pdfURL(
+            named: name,
+            bundle: configuration.resources.bundle
+        ), let image = NSImage(contentsOf: url) {
+            Image(nsImage: image)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .accessibilityHidden(true)
+        } else {
+            Image(name, bundle: configuration.resources.bundle)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .accessibilityHidden(true)
+        }
+        #else
         Image(name, bundle: configuration.resources.bundle)
             .renderingMode(.template)
             .resizable()
             .scaledToFit()
             .accessibilityHidden(true)
+        #endif
     }
 
     private func reveal(for style: BodyMapRegionStyle) -> Double {
