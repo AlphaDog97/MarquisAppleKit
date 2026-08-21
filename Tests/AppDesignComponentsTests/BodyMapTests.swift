@@ -45,6 +45,35 @@ final class BodyMapTests: XCTestCase {
         )
     }
 
+    func testPackageContainsEveryHumanBodyPDF() {
+        let resolver = BodyMapResourceResolver()
+        let bundle = BodyMapResourceConfiguration(model: .male).bundle
+
+        for model in [BodyMapModel.male, .female] {
+            for side in [BodyMapAnatomySide.front, .back] {
+                let baseName = BodyMapAnatomyAssetResolver.baseShapeAssetName(
+                    model: model,
+                    side: side
+                )
+                XCTAssertNotNil(
+                    resolver.pdfURL(named: baseName, bundle: bundle),
+                    "Missing packaged BodyMap resource: \(baseName).pdf"
+                )
+            }
+
+            for asset in BodyMapAnatomyAsset.allCases {
+                let name = BodyMapAnatomyAssetResolver.assetName(
+                    model: model,
+                    asset: asset
+                )
+                XCTAssertNotNil(
+                    resolver.pdfURL(named: name, bundle: bundle),
+                    "Missing packaged BodyMap resource: \(name).pdf"
+                )
+            }
+        }
+    }
+
     func testCanonicalRegionIdentifiersMatchSomaTrackRawValues() {
         XCTAssertEqual(BodyMapRegionID.shoulders.rawValue, "shoulders")
         XCTAssertEqual(BodyMapRegionID.upperBack.rawValue, "upperBack")
