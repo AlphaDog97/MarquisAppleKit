@@ -13,17 +13,22 @@ enum BodyMapMaskRasterizer {
 
     enum RasterizationError: Error {
         case invalidImageSize(CGSize)
+        case invalidPDF(URL)
+        case missingPDFPage(URL)
         case missingRasterizedImage
         case bitmapContextCreationFailed
     }
 
-    static func rasterize(_ image: UIImage) throws -> BodyMapMaskBitmap {
+    static func rasterize(
+        _ image: UIImage,
+        scale: CGFloat = rasterScale
+    ) throws -> BodyMapMaskBitmap {
         guard image.size.width > 0, image.size.height > 0 else {
             throw RasterizationError.invalidImageSize(image.size)
         }
 
         let format = UIGraphicsImageRendererFormat()
-        format.scale = rasterScale
+        format.scale = scale
         format.opaque = false
 
         let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
@@ -34,6 +39,47 @@ enum BodyMapMaskRasterizer {
             throw RasterizationError.missingRasterizedImage
         }
 
+        return try alphaBitmap(from: cgImage)
+    }
+
+    static func rasterizePDF(
+        at url: URL,
+        scale: CGFloat = rasterScale
+    ) throws -> BodyMapMaskBitmap {
+        guard let document = CGPDFDocument(url as CFURL) else {
+            throw RasterizationError.invalidPDF(url)
+        }
+        guard let page = document.page(at: 1) else {
+            throw RasterizationError.missingPDFPage(url)
+        }
+
+        let pageBounds = page.getBoxRect(.mediaBox).standardized
+        guard pageBounds.width > 0, pageBounds.height > 0 else {
+            throw RasterizationError.invalidImageSize(pageBounds.size)
+        }
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        format.opaque = false
+
+        let renderer = UIGraphicsImageRenderer(size: pageBounds.size, format: format)
+        let rasterized = renderer.image { context in
+            let cgContext = context.cgContext
+            cgContext.saveGState()
+            cgContext.translateBy(x: 0, y: pageBounds.height)
+            cgContext.scaleBy(x: 1, y: -1)
+            cgContext.translateBy(x: -pageBounds.minX, y: -pageBounds.minY)
+            cgContext.drawPDFPage(page)
+            cgContext.restoreGState()
+        }
+        guard let cgImage = rasterized.cgImage else {
+            throw RasterizationError.missingRasterizedImage
+        }
+
+        return try alphaBitmap(from: cgImage)
+    }
+
+    private static func alphaBitmap(from cgImage: CGImage) throws -> BodyMapMaskBitmap {
         let width = cgImage.width
         let height = cgImage.height
         let bytesPerPixel = 4
