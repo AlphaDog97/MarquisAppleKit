@@ -20,12 +20,17 @@ final class BodyMapTests: XCTestCase {
         XCTAssertEqual(uniform.shadowEnergy, 0.2)
     }
 
-    func testAppearancePreservesGlobalGlowSwitchWhenRegionsChange() {
-        let appearance = BodyMapAppearance(glowEnabled: false)
+    func testAppearancePreservesGlobalSettingsWhenRegionsChange() {
+        let appearance = BodyMapAppearance(
+            inactiveColor: .gray,
+            baseOpacity: 0.75,
+            glowEnabled: false
+        )
         let updated = appearance.withRegions([
             BodyMapRegionStyle(id: .chest, color: .red)
         ])
 
+        XCTAssertEqual(updated.baseOpacity, 0.75)
         XCTAssertFalse(updated.glowEnabled)
         XCTAssertEqual(updated.regionStyles.count, 1)
         XCTAssertEqual(updated.regionStyles.first?.id, .chest)
