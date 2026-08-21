@@ -1,0 +1,94 @@
+name: Release 0.3.4
+
+on:
+  pull_request:
+    paths:
+      - 'Sources/AppDesignComponents/BodyMap/**'
+      - 'Sources/AppDesignComponents/Resources/BodyMap/**'
+      - 'Tests/AppDesignComponentsTests/BodyMapTests.swift'
+      - '.github/workflows/release-0.3.4.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'Sources/AppDesignComponents/BodyMap/**'
+      - 'Sources/AppDesignComponents/Resources/BodyMap/**'
+      - 'Tests/AppDesignComponentsTests/BodyMapTests.swift'
+      - '.github/workflows/release-0.3.4.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-tag:
+    runs-on: macos-15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Select newest Xcode
+        run: |
+          BEST_APP=""
+          BEST_MAJOR=0
+          for APP in /Applications/Xcode*.app; do
+            VERSION="$($APP/Contents/Developer/usr/bin/xcodebuild -version | head -1 | awk '{print $2}')"
+            MAJOR="${VERSION%%.*}"
+            if [[ "$MAJOR" =~ ^[0-9]+$ ]] && (( MAJOR > BEST_MAJOR )); then
+              BEST_MAJOR="$MAJOR"
+              BEST_APP="$APP"
+            fi
+          done
+          test -n "$BEST_APP"
+          sudo xcode-select --switch "$BEST_APP/Contents/Developer"
+          xcodebuild -version
+
+      - name: Select iOS Simulator
+        run: |
+          SIMULATOR_ID="$(xcrun simctl list devices available -j | python3 -c '
+          import json
+          import sys
+
+          data = json.load(sys.stdin)["devices"]
+
+          def runtime_version(runtime):
+              marker = ".iOS-"
+              if marker not in runtime:
+                  return ()
+              return tuple(int(part) for part in runtime.split(marker, 1)[1].split("-"))
+
+          for runtime in sorted(data, key=runtime_version, reverse=True):
+              if ".iOS-" not in runtime:
+                  continue
+              for device in data[runtime]:
+                  if device.get("isAvailable") and device.get("name", "").startswith("iPhone"):
+                      print(device["udid"])
+                      raise SystemExit(0)
+
+          raise SystemExit("No available iPhone simulator")
+          ')"
+          test -n "$SIMULATOR_ID"
+          echo "SIMULATOR_ID=$SIMULATOR_ID" >> "$GITHUB_ENV"
+
+      - name: Run BodyMap tests on iOS Simulator
+        run: |
+          xcodebuild \
+            -scheme AppDesignComponents \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            CODE_SIGNING_ALLOWED=NO \
+            test
+
+      - name: Create semantic version tag
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if git rev-parse "0.3.4" >/dev/null 2>&1; then
+            echo "Tag 0.3.4 already exists."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "0.3.4" -m "MarquisAppleKit 0.3.4"
+          git push origin "0.3.4"
