@@ -9,6 +9,14 @@ on:
       - Sources/AppDesignComponents/BodyMap/**
       - Sources/AppDesignComponents/Resources/BodyMap/**
       - Tests/AppDesignComponentsTests/BodyMapTests.swift
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/body-map-packaged-resources.yml
+      - Sources/AppDesignComponents/BodyMap/**
+      - Sources/AppDesignComponents/Resources/BodyMap/**
+      - Tests/AppDesignComponentsTests/BodyMapTests.swift
 
 jobs:
   validate-body-map:
