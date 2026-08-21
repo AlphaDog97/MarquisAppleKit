@@ -1,11 +1,12 @@
 name: Import BodyMap Assets
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/somatrack-body-map-parity
+      - main
     paths:
       - .github/workflows/import-bodymap-assets.yml
+      - Sources/AppDesignComponents/BodyMap/BodyMapResourceConfiguration.swift
 
 permissions:
   contents: write
@@ -15,7 +16,7 @@ jobs:
     runs-on: macos-15
 
     steps:
-      - name: Check out MarquisAppleKit
+      - name: Check out MarquisAppleKit branch
         uses: actions/checkout@v6
         with:
           ref: fix/somatrack-body-map-parity
@@ -35,8 +36,9 @@ jobs:
           rm -rf "$destination"
           mkdir -p "$destination"
           cp -R _SomaTrack/SomaTrack/Assets.xcassets/FitnessBodyParts.contents/. "$destination/"
-          echo "Imported $(find "$destination" -name '*.pdf' | wc -l | tr -d ' ') PDF assets"
-          test "$(find "$destination" -name '*.pdf' | wc -l | tr -d ' ')" = "38"
+          count="$(find "$destination" -name '*.pdf' | wc -l | tr -d ' ')"
+          echo "Imported $count PDF assets"
+          test "$count" = "38"
 
       - name: Validate asset catalog
         run: |
