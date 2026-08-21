@@ -80,7 +80,7 @@ enum BodyMapMetalRenderStateBuilder {
             baseColor: rgba(
                 appearance.inactiveColor,
                 colorScheme: colorScheme,
-                alphaMultiplier: 0.10
+                alphaMultiplier: appearance.baseOpacity
             ),
             assets: assets.map { asset in
                 let style = styles.first { $0.id == asset.region }
