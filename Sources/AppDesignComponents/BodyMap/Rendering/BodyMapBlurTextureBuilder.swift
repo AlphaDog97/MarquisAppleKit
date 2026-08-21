@@ -12,6 +12,8 @@ final class BodyMapBlurTextureBuilder {
         case commandEncodingFailed
     }
 
+    private static let glowSpreadScale: Float = 0.75
+
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let downsamplePipeline: MTLComputePipelineState
@@ -62,7 +64,10 @@ final class BodyMapBlurTextureBuilder {
             source: lowResolution,
             temporary: temporary,
             destination: glow,
-            radius: max(glowRadius * radiusScale, 0)
+            radius: max(
+                glowRadius * radiusScale * Self.glowSpreadScale,
+                0
+            )
         )
         try encodeBlurPair(
             commandBuffer: commandBuffer,
