@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum BodyMapModel: Sendable {
+public enum BodyMapModel: Sendable, Equatable {
     case male
     case female
 }
