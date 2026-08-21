@@ -12,24 +12,14 @@ struct BodyMapMaskTextureSet {
     var width: Int { masks.width }
 }
 
-struct BodyMapBlurTextureSet {
-    let glow: MTLTexture
-    let shadow: MTLTexture
-    let selection: MTLTexture
-}
-
 final class BodyMapTextureLoader {
     enum LoadingError: Error {
         case missingAsset(String)
         case rasterizationFailed(String, Error)
         case inconsistentAssetSize(String)
-        case commandEncodingFailed
     }
 
     private let device: MTLDevice
-    private let commandQueue: MTLCommandQueue
-    private let downsamplePipeline: MTLComputePipelineState
-    private let blurPipeline: MTLComputePipelineState
     private let cache: BodyMapMetalTextureCache
 
     init(
@@ -37,9 +27,6 @@ final class BodyMapTextureLoader {
         cache: BodyMapMetalTextureCache = .shared
     ) {
         self.device = resources.device
-        self.commandQueue = resources.commandQueue
-        self.downsamplePipeline = resources.downsamplePipeline
-        self.blurPipeline = resources.blurPipeline
         self.cache = cache
     }
 
@@ -67,24 +54,26 @@ final class BodyMapTextureLoader {
             BodyMapAnatomyAssetResolver.assetName(model: model, asset: $0)
         }
 
-        guard let firstName = names.first else {
-            throw LoadingError.commandEncodingFailed
+        let masks = try names.map { try loadSourceMask(named: $0, bundle: bundle) }
+        guard let first = masks.first else {
+            preconditionFailure("BodyMap mask manifest cannot be empty")
         }
-        let first = try loadSourceMask(named: firstName, bundle: bundle)
+        guard zip(names, masks).allSatisfy({ _, mask in
+            mask.width == first.width && mask.height == first.height
+        }) else {
+            let mismatch = zip(names, masks).first {
+                $0.1.width != first.width || $0.1.height != first.height
+            }
+            throw LoadingError.inconsistentAssetSize(mismatch?.0 ?? "unknown")
+        }
+
         let texture = makeMaskArray(
             width: first.width,
             height: first.height,
-            slices: names.count,
-            storageMode: .shared
+            slices: masks.count
         )
-        upload(first, to: texture, slice: 0)
-
-        for (index, name) in names.dropFirst().enumerated() {
-            let mask = try loadSourceMask(named: name, bundle: bundle)
-            guard mask.width == first.width, mask.height == first.height else {
-                throw LoadingError.inconsistentAssetSize(name)
-            }
-            upload(mask, to: texture, slice: index + 1)
+        for (index, mask) in masks.enumerated() {
+            upload(mask, to: texture, slice: index)
         }
 
         let result = BodyMapMaskTextureSet(
@@ -101,65 +90,6 @@ final class BodyMapTextureLoader {
             side: side
         )
         return result
-    }
-
-    func makeBlurTextures(
-        from source: MTLTexture,
-        glowRadius: Float,
-        shadowRadius: Float,
-        selectionRadius: Float
-    ) throws -> BodyMapBlurTextureSet {
-        let scale: Float = 0.25
-        let width = max(Int((Float(source.width) * scale).rounded(.up)), 1)
-        let height = max(Int((Float(source.height) * scale).rounded(.up)), 1)
-        let lowResolution = makeMaskArray(
-            width: width,
-            height: height,
-            slices: source.arrayLength
-        )
-        let temporary = makeMaskArray(
-            width: width,
-            height: height,
-            slices: source.arrayLength
-        )
-        let glow = makeMaskArray(width: width, height: height, slices: source.arrayLength)
-        let shadow = makeMaskArray(width: width, height: height, slices: source.arrayLength)
-        let selection = makeMaskArray(width: width, height: height, slices: source.arrayLength)
-
-        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
-            throw LoadingError.commandEncodingFailed
-        }
-        try encodeDownsample(
-            commandBuffer: commandBuffer,
-            source: source,
-            destination: lowResolution
-        )
-
-        let radiusScale = Float(width) / Float(max(source.width, 1))
-        try encodeBlurPair(
-            commandBuffer: commandBuffer,
-            source: lowResolution,
-            temporary: temporary,
-            destination: glow,
-            radius: max(glowRadius * radiusScale, 0)
-        )
-        try encodeBlurPair(
-            commandBuffer: commandBuffer,
-            source: lowResolution,
-            temporary: temporary,
-            destination: shadow,
-            radius: max(shadowRadius * radiusScale, 0)
-        )
-        try encodeBlurPair(
-            commandBuffer: commandBuffer,
-            source: lowResolution,
-            temporary: temporary,
-            destination: selection,
-            radius: max(selectionRadius * radiusScale, 0)
-        )
-        commandBuffer.commit()
-
-        return .init(glow: glow, shadow: shadow, selection: selection)
     }
 
     private func loadSourceMask(
@@ -180,8 +110,7 @@ final class BodyMapTextureLoader {
     private func makeMaskArray(
         width: Int,
         height: Int,
-        slices: Int,
-        storageMode: MTLStorageMode = .private
+        slices: Int
     ) -> MTLTexture {
         let descriptor = MTLTextureDescriptor()
         descriptor.textureType = .type2DArray
@@ -189,8 +118,8 @@ final class BodyMapTextureLoader {
         descriptor.width = width
         descriptor.height = height
         descriptor.arrayLength = slices
-        descriptor.storageMode = storageMode
-        descriptor.usage = [.shaderRead, .shaderWrite]
+        descriptor.storageMode = .shared
+        descriptor.usage = .shaderRead
 
         guard let texture = device.makeTexture(descriptor: descriptor) else {
             preconditionFailure("Unable to allocate BodyMap mask texture array")
@@ -215,106 +144,5 @@ final class BodyMapTextureLoader {
             )
         }
     }
-
-    private func encodeDownsample(
-        commandBuffer: MTLCommandBuffer,
-        source: MTLTexture,
-        destination: MTLTexture
-    ) throws {
-        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
-            throw LoadingError.commandEncodingFailed
-        }
-        encoder.setComputePipelineState(downsamplePipeline)
-        encoder.setTexture(source, index: 0)
-        encoder.setTexture(destination, index: 1)
-        dispatch(
-            encoder: encoder,
-            pipeline: downsamplePipeline,
-            width: destination.width,
-            height: destination.height,
-            depth: destination.arrayLength
-        )
-        encoder.endEncoding()
-    }
-
-    private func encodeBlurPair(
-        commandBuffer: MTLCommandBuffer,
-        source: MTLTexture,
-        temporary: MTLTexture,
-        destination: MTLTexture,
-        radius: Float
-    ) throws {
-        try encodeBlur(
-            commandBuffer: commandBuffer,
-            source: source,
-            destination: temporary,
-            radius: radius,
-            axis: SIMD2(1, 0)
-        )
-        try encodeBlur(
-            commandBuffer: commandBuffer,
-            source: temporary,
-            destination: destination,
-            radius: radius,
-            axis: SIMD2(0, 1)
-        )
-    }
-
-    private func encodeBlur(
-        commandBuffer: MTLCommandBuffer,
-        source: MTLTexture,
-        destination: MTLTexture,
-        radius: Float,
-        axis: SIMD2<Float>
-    ) throws {
-        guard let encoder = commandBuffer.makeComputeCommandEncoder() else {
-            throw LoadingError.commandEncodingFailed
-        }
-        var uniforms = BodyMapBlurUniforms(radius: radius, axis: axis)
-        encoder.setComputePipelineState(blurPipeline)
-        encoder.setTexture(source, index: 0)
-        encoder.setTexture(destination, index: 1)
-        encoder.setBytes(
-            &uniforms,
-            length: MemoryLayout<BodyMapBlurUniforms>.stride,
-            index: 0
-        )
-        dispatch(
-            encoder: encoder,
-            pipeline: blurPipeline,
-            width: source.width,
-            height: source.height,
-            depth: source.arrayLength
-        )
-        encoder.endEncoding()
-    }
-
-    private func dispatch(
-        encoder: MTLComputeCommandEncoder,
-        pipeline: MTLComputePipelineState,
-        width: Int,
-        height: Int,
-        depth: Int
-    ) {
-        let threadWidth = pipeline.threadExecutionWidth
-        let threadHeight = max(
-            pipeline.maxTotalThreadsPerThreadgroup / threadWidth,
-            1
-        )
-        encoder.dispatchThreads(
-            MTLSize(width: width, height: height, depth: depth),
-            threadsPerThreadgroup: MTLSize(
-                width: threadWidth,
-                height: threadHeight,
-                depth: 1
-            )
-        )
-    }
-}
-
-private struct BodyMapBlurUniforms {
-    var radius: Float
-    var padding: Float = 0
-    var axis: SIMD2<Float>
 }
 #endif
