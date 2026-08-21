@@ -30,12 +30,17 @@ final class BodyMapTextureLoader {
     private let commandQueue: MTLCommandQueue
     private let downsamplePipeline: MTLComputePipelineState
     private let blurPipeline: MTLComputePipelineState
+    private let cache: BodyMapMetalTextureCache
 
-    init(resources: BodyMapMetalResources) {
+    init(
+        resources: BodyMapMetalResources,
+        cache: BodyMapMetalTextureCache = .shared
+    ) {
         self.device = resources.device
         self.commandQueue = resources.commandQueue
         self.downsamplePipeline = resources.downsamplePipeline
         self.blurPipeline = resources.blurPipeline
+        self.cache = cache
     }
 
     func loadMaskSet(
@@ -43,6 +48,15 @@ final class BodyMapTextureLoader {
         side: BodyMapAnatomySide,
         bundle: Bundle
     ) throws -> BodyMapMaskTextureSet {
+        if let cached = cache.maskSet(
+            device: device,
+            bundle: bundle,
+            model: model,
+            side: side
+        ) {
+            return cached
+        }
+
         let assets = BodyMapAnatomyAsset.allCases.filter { $0.side == side }
         let names = [
             BodyMapAnatomyAssetResolver.baseShapeAssetName(
@@ -73,12 +87,20 @@ final class BodyMapTextureLoader {
             upload(mask, to: texture, slice: index + 1)
         }
 
-        return BodyMapMaskTextureSet(
+        let result = BodyMapMaskTextureSet(
             model: model,
             side: side,
             assets: assets,
             masks: texture
         )
+        cache.store(
+            result,
+            device: device,
+            bundle: bundle,
+            model: model,
+            side: side
+        )
+        return result
     }
 
     func makeBlurTextures(
