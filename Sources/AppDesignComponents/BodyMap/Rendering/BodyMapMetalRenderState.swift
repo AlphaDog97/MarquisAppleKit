@@ -49,7 +49,7 @@ struct BodyMapMetalRenderState: Equatable {
                     )
                 )
             },
-            glowRadius: glowRadius,
+            glowRadius: mix(start.glowRadius, glowRadius, t),
             shadowRadius: shadowRadius
         )
     }
@@ -87,11 +87,14 @@ enum BodyMapMetalRenderStateBuilder {
                 return renderAsset(
                     asset,
                     style: style,
+                    glowEnabled: appearance.glowEnabled,
                     configuration: configuration,
                     colorScheme: colorScheme
                 )
             },
-            glowRadius: Float(styles.map(\.glow.radius).max() ?? 0),
+            glowRadius: appearance.glowEnabled
+                ? Float(styles.map(\.glow.radius).max() ?? 0)
+                : 0,
             shadowRadius: Float(styles.map(\.shadow.radius).max() ?? 0)
         )
     }
@@ -99,6 +102,7 @@ enum BodyMapMetalRenderStateBuilder {
     private static func renderAsset(
         _ asset: BodyMapAnatomyAsset,
         style: BodyMapRegionStyle?,
+        glowEnabled: Bool,
         configuration: BodyMapConfiguration,
         colorScheme: ColorScheme
     ) -> BodyMapMetalRenderState.Asset {
@@ -130,7 +134,9 @@ enum BodyMapMetalRenderStateBuilder {
             glowColor: rgba(style.glow.color, colorScheme: colorScheme),
             shadowColor: rgba(style.shadow.color, colorScheme: colorScheme),
             fillOpacity: Float(fill),
-            glowOpacity: Float(clamp(style.glow.opacity * reveal * glowEnergy)),
+            glowOpacity: glowEnabled
+                ? Float(clamp(style.glow.opacity * reveal * glowEnergy))
+                : 0,
             shadowOpacity: Float(clamp(style.shadow.opacity * reveal * shadowEnergy)),
             selectionOpacity: style.isSelected ? Float(reveal) : 0
         )
