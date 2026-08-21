@@ -6,6 +6,7 @@ import AppKit
 
 struct BodyMapSideView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.bodyMapRenderingMode) private var renderingMode
 
     let side: BodyMapAnatomySide
     let configuration: BodyMapConfiguration
@@ -29,18 +30,28 @@ struct BodyMapSideView: View {
     @ViewBuilder
     private var visualLayer: some View {
         #if canImport(UIKit)
-        BodyMapMetalSurface(
-            state: BodyMapMetalRenderStateBuilder.make(
-                side: side,
-                configuration: configuration,
-                appearance: appearance,
-                colorScheme: colorScheme
-            ),
-            bundle: configuration.resources.bundle,
-            animation: animation
-        )
-        .accessibilityHidden(true)
+        switch renderingMode {
+        case .automatic:
+            BodyMapMetalSurface(
+                state: BodyMapMetalRenderStateBuilder.make(
+                    side: side,
+                    configuration: configuration,
+                    appearance: appearance,
+                    colorScheme: colorScheme
+                ),
+                bundle: configuration.resources.bundle,
+                animation: animation
+            )
+            .accessibilityHidden(true)
+        case .staticExport:
+            swiftUIVisualLayer
+        }
         #else
+        swiftUIVisualLayer
+        #endif
+    }
+
+    private var swiftUIVisualLayer: some View {
         ZStack {
             anatomyImage(
                 BodyMapAnatomyAssetResolver.baseShapeAssetName(
@@ -49,14 +60,13 @@ struct BodyMapSideView: View {
                 )
             )
             .foregroundStyle(appearance.inactiveColor)
-            .opacity(0.10)
+            .opacity(appearance.baseOpacity)
 
             glowLayer
                 .blendMode(.screen)
 
             fillLayer
         }
-        #endif
     }
 
     private var glowLayer: some View {
@@ -99,7 +109,7 @@ struct BodyMapSideView: View {
 
     @ViewBuilder
     private var interactionLayer: some View {
-        if let onRegionTap {
+        if renderingMode == .automatic, let onRegionTap {
             GeometryReader { proxy in
                 Color.clear
                     .contentShape(Rectangle())
