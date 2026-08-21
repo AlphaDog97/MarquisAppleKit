@@ -1,6 +1,10 @@
 import XCTest
 @testable import AppDesignComponents
 
+#if canImport(UIKit)
+import Metal
+#endif
+
 final class BodyMapTests: XCTestCase {
     func testShaderConfigurationCreatesMetalUniform() {
         let configuration = BodyMapShaderConfiguration(
@@ -84,6 +88,30 @@ final class BodyMapTests: XCTestCase {
             }
         }
     }
+
+#if canImport(UIKit)
+    func testPackageContainsBodyMapMetalFunctions() throws {
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            XCTFail("BodyMap requires a Metal-capable device")
+            return
+        }
+
+        let library = try BodyMapMetalResources.makeLibrary(device: device)
+        let functionNames = [
+            "bodyMapVertex",
+            "bodyMapFragment",
+            "bodyMapDownsampleMask",
+            "bodyMapBlurMask"
+        ]
+
+        for functionName in functionNames {
+            XCTAssertNotNil(
+                library.makeFunction(name: functionName),
+                "Missing packaged BodyMap Metal function: \(functionName)"
+            )
+        }
+    }
+#endif
 
     func testCanonicalRegionIdentifiersMatchSomaTrackRawValues() {
         XCTAssertEqual(BodyMapRegionID.shoulders.rawValue, "shoulders")

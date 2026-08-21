@@ -49,26 +49,8 @@ final class BodyMapMetalResources: @unchecked Sendable {
         self.commandQueue = commandQueue
     }
 
-    private static func makeLibrary(device: MTLDevice) throws -> MTLLibrary {
-        let shaderURL = Bundle.module.url(
-            forResource: "BodyMapShaders",
-            withExtension: "metal",
-            subdirectory: "BodyMap"
-        ) ?? Bundle.module.url(
-            forResource: "BodyMapShaders",
-            withExtension: "metal"
-        )
-
-        guard let shaderURL else {
-            throw BodyMapMetalResourceError.missingShader
-        }
-
-        let source = try String(contentsOf: shaderURL, encoding: .utf8)
-        return try device.makeLibrary(source: source, options: nil)
+    static func makeLibrary(device: MTLDevice) throws -> MTLLibrary {
+        try device.makeDefaultLibrary(bundle: Bundle.module)
     }
-}
-
-private enum BodyMapMetalResourceError: Error {
-    case missingShader
 }
 #endif

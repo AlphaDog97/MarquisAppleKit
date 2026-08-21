@@ -1,0 +1,76 @@
+name: Release 0.3.4
+
+on:
+  pull_request:
+    paths:
+      - 'Sources/AppDesignComponents/BodyMap/**'
+      - 'Sources/AppDesignComponents/Resources/BodyMap/**'
+      - 'Tests/AppDesignComponentsTests/BodyMapTests.swift'
+      - '.github/workflows/release-0.3.4.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'Sources/AppDesignComponents/BodyMap/**'
+      - 'Sources/AppDesignComponents/Resources/BodyMap/**'
+      - 'Tests/AppDesignComponentsTests/BodyMapTests.swift'
+      - '.github/workflows/release-0.3.4.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-tag:
+    runs-on: macos-15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Select newest Xcode
+        run: |
+          BEST_APP=""
+          BEST_MAJOR=0
+          for APP in /Applications/Xcode*.app; do
+            VERSION="$($APP/Contents/Developer/usr/bin/xcodebuild -version | head -1 | awk '{print $2}')"
+            MAJOR="${VERSION%%.*}"
+            if [[ "$MAJOR" =~ ^[0-9]+$ ]] && (( MAJOR > BEST_MAJOR )); then
+              BEST_MAJOR="$MAJOR"
+              BEST_APP="$APP"
+            fi
+          done
+          test -n "$BEST_APP"
+          sudo xcode-select --switch "$BEST_APP/Contents/Developer"
+          xcodebuild -version
+
+      - name: Build AppDesignComponents for iOS Simulator
+        run: |
+          DERIVED_DATA="$RUNNER_TEMP/MarquisAppleKitDerivedData"
+          xcodebuild \
+            -scheme AppDesignComponents \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$DERIVED_DATA" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+          echo "DERIVED_DATA=$DERIVED_DATA" >> "$GITHUB_ENV"
+
+      - name: Verify packaged Metal library
+        run: |
+          METAL_LIBRARY="$(find "$DERIVED_DATA" -type f -name 'default.metallib' -print -quit)"
+          test -n "$METAL_LIBRARY"
+          echo "Verified packaged Metal library: $METAL_LIBRARY"
+
+      - name: Create semantic version tag
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if git rev-parse "0.3.4" >/dev/null 2>&1; then
+            echo "Tag 0.3.4 already exists."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "0.3.4" -m "MarquisAppleKit 0.3.4"
+          git push origin "0.3.4"
