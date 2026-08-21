@@ -5,7 +5,7 @@ import SwiftUI
 /// The default mode uses the platform-optimized renderer. Static export mode
 /// keeps the complete visual in SwiftUI so offscreen renderers such as
 /// `ImageRenderer` can capture it deterministically.
-public enum BodyMapRenderingMode: Sendable {
+public enum BodyMapRenderingMode: Sendable, Equatable {
     case automatic
     case staticExport
 }
