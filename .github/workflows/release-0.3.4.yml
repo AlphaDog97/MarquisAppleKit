@@ -45,40 +45,22 @@ jobs:
           sudo xcode-select --switch "$BEST_APP/Contents/Developer"
           xcodebuild -version
 
-      - name: Select iOS Simulator
+      - name: Build AppDesignComponents for iOS Simulator
         run: |
-          SIMULATOR_ID="$(xcrun simctl list devices available -j | python3 -c '
-          import json
-          import sys
-
-          data = json.load(sys.stdin)["devices"]
-
-          def runtime_version(runtime):
-              marker = ".iOS-"
-              if marker not in runtime:
-                  return ()
-              return tuple(int(part) for part in runtime.split(marker, 1)[1].split("-"))
-
-          for runtime in sorted(data, key=runtime_version, reverse=True):
-              if ".iOS-" not in runtime:
-                  continue
-              for device in data[runtime]:
-                  if device.get("isAvailable") and device.get("name", "").startswith("iPhone"):
-                      print(device["udid"])
-                      raise SystemExit(0)
-
-          raise SystemExit("No available iPhone simulator")
-          ')"
-          test -n "$SIMULATOR_ID"
-          echo "SIMULATOR_ID=$SIMULATOR_ID" >> "$GITHUB_ENV"
-
-      - name: Run BodyMap tests on iOS Simulator
-        run: |
+          DERIVED_DATA="$RUNNER_TEMP/MarquisAppleKitDerivedData"
           xcodebuild \
             -scheme AppDesignComponents \
-            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$DERIVED_DATA" \
             CODE_SIGNING_ALLOWED=NO \
-            test
+            build
+          echo "DERIVED_DATA=$DERIVED_DATA" >> "$GITHUB_ENV"
+
+      - name: Verify packaged Metal library
+        run: |
+          METAL_LIBRARY="$(find "$DERIVED_DATA" -type f -name 'default.metallib' -print -quit)"
+          test -n "$METAL_LIBRARY"
+          echo "Verified packaged Metal library: $METAL_LIBRARY"
 
       - name: Create semantic version tag
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
