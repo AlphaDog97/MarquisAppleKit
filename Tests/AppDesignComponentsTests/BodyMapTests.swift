@@ -16,6 +16,17 @@ final class BodyMapTests: XCTestCase {
         XCTAssertEqual(uniform.shadowEnergy, 0.2)
     }
 
+    func testAppearancePreservesGlobalGlowSwitchWhenRegionsChange() {
+        let appearance = BodyMapAppearance(glowEnabled: false)
+        let updated = appearance.withRegions([
+            BodyMapRegionStyle(id: .chest, color: .red)
+        ])
+
+        XCTAssertFalse(updated.glowEnabled)
+        XCTAssertEqual(updated.regionStyles.count, 1)
+        XCTAssertEqual(updated.regionStyles.first?.id, .chest)
+    }
+
     func testAnatomyManifestMatchesSomaTrackSides() {
         let front = BodyMapAnatomyAsset.allCases.filter { $0.side == .front }
         let back = BodyMapAnatomyAsset.allCases.filter { $0.side == .back }
