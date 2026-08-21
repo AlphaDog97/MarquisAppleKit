@@ -36,6 +36,7 @@ enum AppSharePreviewImageRenderer {
             .environment(\.locale, locale)
             .environment(\.colorScheme, colorScheme)
             .appTheme(appTheme)
+            .bodyMapRenderingMode(.staticExport)
 
         let renderer = ImageRenderer(content: composedContent)
         renderer.scale = scale ?? UIScreen.main.scale
