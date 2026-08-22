@@ -71,9 +71,9 @@ public struct BodyMapShadowStyle {
 
     public init(
         color: Color = .black,
-        opacity: Double = 0,
-        radius: CGFloat = 0,
-        energy: Double = 0
+        opacity: Double = 0.18,
+        radius: CGFloat = 6,
+        energy: Double = 0.35
     ) {
         self.color = color
         self.opacity = opacity
