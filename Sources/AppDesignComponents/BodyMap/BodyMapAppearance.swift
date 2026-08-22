@@ -12,16 +12,16 @@ enum BodyMapBaseAppearance {
         Color(
             uiColor: UIColor { traits in
                 traits.userInterfaceStyle == .dark
-                    ? .secondaryLabel
-                    : .tertiaryLabel
+                    ? .tertiaryLabel
+                    : .secondaryLabel
             }
         )
 #elseif canImport(AppKit)
         Color(
             nsColor: NSColor(name: nil) { appearance in
                 appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                    ? .secondaryLabelColor
-                    : .tertiaryLabelColor
+                    ? .tertiaryLabelColor
+                    : .secondaryLabelColor
             }
         )
 #else
