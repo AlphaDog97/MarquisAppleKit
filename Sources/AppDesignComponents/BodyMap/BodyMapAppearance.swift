@@ -15,23 +15,11 @@ public struct BodyMapAppearance {
 
     public static var adaptiveInactiveColor: Color {
 #if canImport(UIKit)
-        Color(
-            uiColor: UIColor { traits in
-                traits.userInterfaceStyle == .dark
-                    ? UIColor(white: 0.12, alpha: 1)
-                    : UIColor(white: 0.94, alpha: 1)
-            }
-        )
+        Color(uiColor: .tertiaryLabel)
 #elseif canImport(AppKit)
-        Color(
-            nsColor: NSColor(name: nil) { appearance in
-                appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                    ? NSColor(white: 0.12, alpha: 1)
-                    : NSColor(white: 0.94, alpha: 1)
-            }
-        )
+        Color(nsColor: .tertiaryLabelColor)
 #else
-        Color(white: 0.94)
+        Color.primary.opacity(0.30)
 #endif
     }
 
