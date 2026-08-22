@@ -39,6 +39,7 @@ public enum AppNumberFormatter {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.locale = locale
+        formatter.usesGroupingSeparator = true
         formatter.minimumFractionDigits = fractionDigits
         formatter.maximumFractionDigits = fractionDigits
         return formatter.string(from: NSNumber(value: value)) ?? ""
