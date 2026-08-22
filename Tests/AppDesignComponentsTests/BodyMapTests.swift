@@ -20,6 +20,18 @@ final class BodyMapTests: XCTestCase {
         XCTAssertEqual(uniform.shadowEnergy, 0.2)
     }
 
+    func testDefaultAppearanceUsesOpaqueAdaptiveBase() {
+        let appearance = BodyMapAppearance()
+
+        XCTAssertEqual(appearance.baseOpacity, 1)
+    }
+
+    func testCustomInactiveColorKeepsLegacyBaseOpacityDefault() {
+        let appearance = BodyMapAppearance(inactiveColor: .gray)
+
+        XCTAssertEqual(appearance.baseOpacity, 0.10)
+    }
+
     func testAppearancePreservesGlobalSettingsWhenRegionsChange() {
         let appearance = BodyMapAppearance(
             inactiveColor: .gray,
