@@ -59,7 +59,7 @@ struct BodyMapSideView: View {
                     side: side
                 )
             )
-            .foregroundStyle(BodyMapBaseAppearance.inactiveColor)
+            .foregroundStyle(appearance.inactiveColor)
             .opacity(BodyMapBaseAppearance.baseOpacity)
 
             glowLayer

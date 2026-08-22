@@ -8,9 +8,21 @@ enum BodyMapBaseAppearance {
 }
 
 public struct BodyMapAppearance {
+    public let inactiveColor: Color
     public let regionStyles: [BodyMapRegionStyle]
 
     public init(regionStyles: [BodyMapRegionStyle] = []) {
+        self.init(
+            inactiveColor: BodyMapBaseAppearance.inactiveColor,
+            regionStyles: regionStyles
+        )
+    }
+
+    public init(
+        inactiveColor: Color,
+        regionStyles: [BodyMapRegionStyle] = []
+    ) {
+        self.inactiveColor = inactiveColor
         self.regionStyles = regionStyles
     }
 
@@ -19,6 +31,9 @@ public struct BodyMapAppearance {
     }
 
     func withRegions(_ regions: [BodyMapRegionStyle]) -> BodyMapAppearance {
-        BodyMapAppearance(regionStyles: regions)
+        BodyMapAppearance(
+            inactiveColor: inactiveColor,
+            regionStyles: regions
+        )
     }
 }

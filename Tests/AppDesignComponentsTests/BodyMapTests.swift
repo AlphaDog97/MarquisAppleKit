@@ -34,6 +34,17 @@ final class BodyMapTests: XCTestCase {
         XCTAssertEqual(appearance.regionStyles.first?.id, .chest)
     }
 
+    func testAppearancePreservesCustomInactiveColorWhenRegionsChange() {
+        let appearance = BodyMapAppearance(inactiveColor: .red)
+        let updated = appearance.withRegions([
+            BodyMapRegionStyle(id: .chest, color: .blue)
+        ])
+
+        XCTAssertEqual(appearance.inactiveColor, .red)
+        XCTAssertEqual(updated.inactiveColor, .red)
+        XCTAssertEqual(updated.regionStyles.count, 1)
+    }
+
     func testAppearanceUpdatesRegions() {
         let appearance = BodyMapAppearance()
         let updated = appearance.withRegions([
