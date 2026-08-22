@@ -26,4 +26,4 @@
 ### Fixed
 
 - Coach Mark Overlay 会在延伸到全屏前保留真实安全区，避免说明卡进入状态栏或灵动岛区域。
-- `BodyMap` 默认人体底色在浅色和深色模式下都使用系统 `secondary` 语义色。
+- `BodyMap` 默认人体底色在浅色和深色模式下都使用系统 `tertiary` 语义色。

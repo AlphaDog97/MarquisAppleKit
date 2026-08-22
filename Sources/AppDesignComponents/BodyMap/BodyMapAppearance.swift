@@ -9,11 +9,11 @@ import AppKit
 enum BodyMapBaseAppearance {
     static var inactiveColor: Color {
 #if canImport(UIKit)
-        Color(uiColor: .secondaryLabel)
+        Color(uiColor: .tertiaryLabel)
 #elseif canImport(AppKit)
-        Color(nsColor: .secondaryLabelColor)
+        Color(nsColor: .tertiaryLabelColor)
 #else
-        Color.secondary
+        Color.primary.opacity(0.30)
 #endif
     }
 
