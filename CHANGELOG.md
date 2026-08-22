@@ -21,6 +21,7 @@
 
 - 公共 SwiftUI 组件改用语义字体角色。
 - GoalMaster 的引导和确认框视觉实现已移除业务命名，并改用 `AppTheme` 与 `HapticFeedback`。
+- `BodyMapAppearance` 不再公开人体底色、底色透明度、背景色和 glow 开关；这些视觉策略统一由 `BodyMap` 内部控制。
 
 ### Fixed
 
