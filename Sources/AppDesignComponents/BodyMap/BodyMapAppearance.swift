@@ -1,22 +1,7 @@
 import SwiftUI
 
-#if canImport(UIKit)
-import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
-
 enum BodyMapBaseAppearance {
-    static var inactiveColor: Color {
-#if canImport(UIKit)
-        Color(uiColor: .tertiaryLabel)
-#elseif canImport(AppKit)
-        Color(nsColor: .tertiaryLabelColor)
-#else
-        Color.primary.opacity(0.30)
-#endif
-    }
-
+    static let inactiveColor = Color.primary.opacity(0.10)
     static let baseOpacity: Double = 1
     static let backgroundColor = Color.clear
     static let glowEnabled = true
