@@ -3,7 +3,7 @@ import SwiftUI
 enum BodyMapBaseAppearance {
     static let inactiveColor = Color.primary.opacity(0.10)
     static let baseOpacity: Double = 1
-    static let backgroundColor = Color.clear
+    static let backgroundColor = Color.black.opacity(0.6)
     static let glowEnabled = true
 }
 

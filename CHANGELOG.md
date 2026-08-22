@@ -27,3 +27,4 @@
 
 - Coach Mark Overlay 会在延伸到全屏前保留真实安全区，避免说明卡进入状态栏或灵动岛区域。
 - `BodyMap` 默认人体底色统一使用 `Color.primary.opacity(0.10)`。
+- `BodyMap` 背景在浅色和深色模式下统一使用 `Color.black.opacity(0.6)`。
