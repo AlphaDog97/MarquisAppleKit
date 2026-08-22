@@ -79,7 +79,7 @@ enum BodyMapMetalRenderStateBuilder {
             model: configuration.model,
             side: side,
             baseColor: rgba(
-                BodyMapBaseAppearance.inactiveColor,
+                appearance.inactiveColor,
                 colorScheme: colorScheme,
                 alphaMultiplier: BodyMapBaseAppearance.baseOpacity
             ),
