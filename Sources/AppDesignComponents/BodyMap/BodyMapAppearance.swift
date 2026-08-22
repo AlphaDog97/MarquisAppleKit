@@ -9,21 +9,9 @@ import AppKit
 enum BodyMapBaseAppearance {
     static var inactiveColor: Color {
 #if canImport(UIKit)
-        Color(
-            uiColor: UIColor { traits in
-                traits.userInterfaceStyle == .dark
-                    ? .tertiaryLabel
-                    : .secondaryLabel
-            }
-        )
+        Color(uiColor: .secondaryLabel)
 #elseif canImport(AppKit)
-        Color(
-            nsColor: NSColor(name: nil) { appearance in
-                appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                    ? .tertiaryLabelColor
-                    : .secondaryLabelColor
-            }
-        )
+        Color(nsColor: .secondaryLabelColor)
 #else
         Color.secondary
 #endif
