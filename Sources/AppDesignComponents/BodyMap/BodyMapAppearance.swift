@@ -6,14 +6,8 @@ import UIKit
 import AppKit
 #endif
 
-public struct BodyMapAppearance {
-    public let inactiveColor: Color
-    public let baseOpacity: Double
-    public let backgroundColor: Color
-    public let glowEnabled: Bool
-    public let regionStyles: [BodyMapRegionStyle]
-
-    public static var adaptiveInactiveColor: Color {
+enum BodyMapBaseAppearance {
+    static var inactiveColor: Color {
 #if canImport(UIKit)
         Color(uiColor: .tertiaryLabel)
 #elseif canImport(AppKit)
@@ -23,32 +17,15 @@ public struct BodyMapAppearance {
 #endif
     }
 
-    public init(
-        baseOpacity: Double = 1,
-        backgroundColor: Color = .clear,
-        glowEnabled: Bool = true,
-        regionStyles: [BodyMapRegionStyle] = []
-    ) {
-        self.init(
-            inactiveColor: Self.adaptiveInactiveColor,
-            baseOpacity: baseOpacity,
-            backgroundColor: backgroundColor,
-            glowEnabled: glowEnabled,
-            regionStyles: regionStyles
-        )
-    }
+    static let baseOpacity: Double = 1
+    static let backgroundColor = Color.clear
+    static let glowEnabled = true
+}
 
-    public init(
-        inactiveColor: Color,
-        baseOpacity: Double = 0.10,
-        backgroundColor: Color = .clear,
-        glowEnabled: Bool = true,
-        regionStyles: [BodyMapRegionStyle] = []
-    ) {
-        self.inactiveColor = inactiveColor
-        self.baseOpacity = baseOpacity
-        self.backgroundColor = backgroundColor
-        self.glowEnabled = glowEnabled
+public struct BodyMapAppearance {
+    public let regionStyles: [BodyMapRegionStyle]
+
+    public init(regionStyles: [BodyMapRegionStyle] = []) {
         self.regionStyles = regionStyles
     }
 
@@ -57,12 +34,6 @@ public struct BodyMapAppearance {
     }
 
     func withRegions(_ regions: [BodyMapRegionStyle]) -> BodyMapAppearance {
-        BodyMapAppearance(
-            inactiveColor: inactiveColor,
-            baseOpacity: baseOpacity,
-            backgroundColor: backgroundColor,
-            glowEnabled: glowEnabled,
-            regionStyles: regions
-        )
+        BodyMapAppearance(regionStyles: regions)
     }
 }
