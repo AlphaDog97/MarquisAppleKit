@@ -46,6 +46,17 @@ enum BodyMapMaskRasterizer {
         at url: URL,
         scale: CGFloat = rasterScale
     ) throws -> BodyMapMaskBitmap {
+        let rasterized = try rasterizedPDFImage(at: url, scale: scale)
+        guard let cgImage = rasterized.cgImage else {
+            throw RasterizationError.missingRasterizedImage
+        }
+        return try alphaBitmap(from: cgImage)
+    }
+
+    static func rasterizedPDFImage(
+        at url: URL,
+        scale: CGFloat = rasterScale
+    ) throws -> UIImage {
         guard let document = CGPDFDocument(url as CFURL) else {
             throw RasterizationError.invalidPDF(url)
         }
@@ -72,11 +83,10 @@ enum BodyMapMaskRasterizer {
             cgContext.drawPDFPage(page)
             cgContext.restoreGState()
         }
-        guard let cgImage = rasterized.cgImage else {
+        guard rasterized.cgImage != nil else {
             throw RasterizationError.missingRasterizedImage
         }
-
-        return try alphaBitmap(from: cgImage)
+        return rasterized
     }
 
     private static func alphaBitmap(from cgImage: CGImage) throws -> BodyMapMaskBitmap {
