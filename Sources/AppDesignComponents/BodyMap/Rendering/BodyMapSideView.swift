@@ -102,6 +102,9 @@ struct BodyMapSideView: View {
                                 : .clear,
                             radius: 3
                         )
+                } else {
+                    anatomyImage(assetName(for: asset))
+                        .foregroundStyle(appearance.inactiveRegionColor)
                 }
             }
         }
