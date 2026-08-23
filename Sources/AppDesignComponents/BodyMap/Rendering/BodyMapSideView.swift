@@ -78,7 +78,10 @@ struct BodyMapSideView: View {
                         anatomyImage(assetName(for: asset))
                             .foregroundStyle(style.glow.color)
                             .opacity(glowOpacity(for: style))
-                            .blur(radius: style.glow.radius)
+                            .blur(
+                                radius: style.glow.radius
+                                    * BodyMapGlowMetrics.spreadScale
+                            )
                     }
                 }
             }
