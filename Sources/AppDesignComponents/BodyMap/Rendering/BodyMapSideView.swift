@@ -1,6 +1,8 @@
 import SwiftUI
 
-#if canImport(AppKit)
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
 import AppKit
 #endif
 
@@ -145,7 +147,13 @@ struct BodyMapSideView: View {
 
     @ViewBuilder
     private func anatomyImage(_ name: String) -> some View {
-        #if canImport(AppKit)
+        #if canImport(UIKit)
+        Image(uiImage: staticUIImage(named: name))
+            .renderingMode(.template)
+            .resizable()
+            .scaledToFit()
+            .accessibilityHidden(true)
+        #elseif canImport(AppKit)
         if let url = BodyMapResourceResolver().pdfURL(
             named: name,
             bundle: configuration.resources.bundle
@@ -170,6 +178,21 @@ struct BodyMapSideView: View {
             .accessibilityHidden(true)
         #endif
     }
+
+    #if canImport(UIKit)
+    private func staticUIImage(named name: String) -> UIImage {
+        do {
+            return try BodyMapStaticImageLoader().load(
+                named: name,
+                bundle: configuration.resources.bundle
+            )
+        } catch {
+            preconditionFailure(
+                "Unable to load BodyMap static export asset \(name): \(error)"
+            )
+        }
+    }
+    #endif
 
     private func reveal(for style: BodyMapRegionStyle) -> Double {
         min(max(style.revealFactor, 0), 1)

@@ -1,8 +1,10 @@
+import SwiftUI
 import XCTest
 @testable import AppDesignComponents
 
 #if canImport(UIKit)
 import Metal
+import UIKit
 #endif
 
 final class BodyMapTests: XCTestCase {
@@ -134,6 +136,34 @@ final class BodyMapTests: XCTestCase {
                 "Missing packaged BodyMap Metal function: \(functionName)"
             )
         }
+    }
+
+    @MainActor
+    func testStaticExportProducesVisibleUIImage() throws {
+        let content = BodyMap(
+            model: .male,
+            regions: [
+                BodyMapRegionStyle(id: .chest, color: .red)
+            ],
+            appearance: BodyMapAppearance(inactiveColor: .gray),
+            animation: BodyMapAnimationConfiguration(enabled: false)
+        )
+        .frame(width: 164, height: 208)
+        .bodyMapRenderingMode(.staticExport)
+
+        let renderer = ImageRenderer(content: content)
+        renderer.scale = 2
+
+        guard let image = renderer.uiImage else {
+            XCTFail("Static export did not produce a UIImage")
+            return
+        }
+
+        let bitmap = try BodyMapMaskRasterizer.rasterize(image, scale: 1)
+        XCTAssertTrue(
+            bitmap.bytes.contains { $0 > 0 },
+            "Static export produced a fully transparent image"
+        )
     }
 #endif
 
