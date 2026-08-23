@@ -12,8 +12,6 @@ final class BodyMapBlurTextureBuilder {
         case commandEncodingFailed
     }
 
-    private static let glowSpreadScale: Float = 0.75
-
     private let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let downsamplePipeline: MTLComputePipelineState
@@ -65,7 +63,9 @@ final class BodyMapBlurTextureBuilder {
             temporary: temporary,
             destination: glow,
             radius: max(
-                glowRadius * radiusScale * Self.glowSpreadScale,
+                glowRadius
+                    * radiusScale
+                    * Float(BodyMapGlowMetrics.spreadScale),
                 0
             )
         )
