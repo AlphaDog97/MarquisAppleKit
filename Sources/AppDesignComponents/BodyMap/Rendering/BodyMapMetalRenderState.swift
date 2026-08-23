@@ -42,11 +42,7 @@ struct BodyMapMetalRenderState: Equatable {
                     fillOpacity: mix(source.fillOpacity, target.fillOpacity, t),
                     glowOpacity: mix(source.glowOpacity, target.glowOpacity, t),
                     shadowOpacity: mix(source.shadowOpacity, target.shadowOpacity, t),
-                    selectionOpacity: mix(
-                        source.selectionOpacity,
-                        target.selectionOpacity,
-                        t
-                    )
+                    selectionOpacity: mix(source.selectionOpacity, target.selectionOpacity, t)
                 )
             },
             glowRadius: mix(start.glowRadius, glowRadius, t),
@@ -87,6 +83,7 @@ enum BodyMapMetalRenderStateBuilder {
                 return renderAsset(
                     asset,
                     style: style,
+                    inactiveColor: appearance.inactiveRegionColor,
                     glowEnabled: appearance.glowEnabled,
                     configuration: configuration,
                     colorScheme: colorScheme
@@ -102,6 +99,7 @@ enum BodyMapMetalRenderStateBuilder {
     private static func renderAsset(
         _ asset: BodyMapAnatomyAsset,
         style: BodyMapRegionStyle?,
+        inactiveColor: Color,
         glowEnabled: Bool,
         configuration: BodyMapConfiguration,
         colorScheme: ColorScheme
@@ -109,10 +107,10 @@ enum BodyMapMetalRenderStateBuilder {
         guard let style else {
             return .init(
                 asset: asset,
-                fillColor: .zero,
+                fillColor: rgba(inactiveColor, colorScheme: colorScheme),
                 glowColor: .zero,
                 shadowColor: .zero,
-                fillOpacity: 0,
+                fillOpacity: 1,
                 glowOpacity: 0,
                 shadowOpacity: 0,
                 selectionOpacity: 0
@@ -120,11 +118,7 @@ enum BodyMapMetalRenderStateBuilder {
         }
 
         let reveal = clamp(style.revealFactor)
-        let fill = clamp(
-            style.fillOpacity
-                * reveal
-                * configuration.shader.intensity
-        )
+        let fill = clamp(style.fillOpacity * reveal * configuration.shader.intensity)
         let glowEnergy = max(1, style.glow.energy + configuration.shader.glowEnergy)
         let shadowEnergy = max(1, style.shadow.energy + configuration.shader.shadowEnergy)
 
@@ -134,9 +128,7 @@ enum BodyMapMetalRenderStateBuilder {
             glowColor: rgba(style.glow.color, colorScheme: colorScheme),
             shadowColor: rgba(style.shadow.color, colorScheme: colorScheme),
             fillOpacity: Float(fill),
-            glowOpacity: glowEnabled
-                ? Float(clamp(style.glow.opacity * reveal * glowEnergy))
-                : 0,
+            glowOpacity: glowEnabled ? Float(clamp(style.glow.opacity * reveal * glowEnergy)) : 0,
             shadowOpacity: Float(clamp(style.shadow.opacity * reveal * shadowEnergy)),
             selectionOpacity: style.isSelected ? Float(reveal) : 0
         )
@@ -148,29 +140,17 @@ enum BodyMapMetalRenderStateBuilder {
         alphaMultiplier: Double = 1
     ) -> SIMD4<Float> {
         let style: UIUserInterfaceStyle = colorScheme == .dark ? .dark : .light
-        let resolved = UIColor(color).resolvedColor(
-            with: UITraitCollection(userInterfaceStyle: style)
-        )
+        let resolved = UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: style))
 
         var red: CGFloat = 0
         var green: CGFloat = 0
         var blue: CGFloat = 0
         var alpha: CGFloat = 0
-        guard resolved.getRed(
-            &red,
-            green: &green,
-            blue: &blue,
-            alpha: &alpha
-        ) else {
+        guard resolved.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
             return .zero
         }
 
-        return SIMD4(
-            Float(red),
-            Float(green),
-            Float(blue),
-            Float(alpha * alphaMultiplier)
-        )
+        return SIMD4(Float(red), Float(green), Float(blue), Float(alpha * alphaMultiplier))
     }
 
     private static func clamp(_ value: Double) -> Double {
