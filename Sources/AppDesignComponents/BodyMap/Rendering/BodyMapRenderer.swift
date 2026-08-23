@@ -30,7 +30,7 @@ struct BodyMapRenderer: View {
                 )
             }
         }
-        .background(appearance.backgroundColor)
+        .background(BodyMapBaseAppearance.backgroundColor)
         .animation(
             animation.enabled
                 ? .easeInOut(duration: animation.transitionDuration)

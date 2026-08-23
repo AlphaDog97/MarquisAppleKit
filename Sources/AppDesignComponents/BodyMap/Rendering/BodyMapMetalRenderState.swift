@@ -69,6 +69,7 @@ enum BodyMapMetalRenderStateBuilder {
     ) -> BodyMapMetalRenderState {
         let assets = BodyMapAnatomyAsset.allCases.filter { $0.side == side }
         let styles = appearance.regionStyles
+        let glowEnabled = BodyMapBaseAppearance.glowEnabled
 
         return BodyMapMetalRenderState(
             model: configuration.model,
@@ -76,7 +77,7 @@ enum BodyMapMetalRenderStateBuilder {
             baseColor: rgba(
                 appearance.inactiveColor,
                 colorScheme: colorScheme,
-                alphaMultiplier: appearance.baseOpacity
+                alphaMultiplier: BodyMapBaseAppearance.baseOpacity
             ),
             assets: assets.map { asset in
                 let style = styles.first { $0.id == asset.region }
@@ -89,7 +90,7 @@ enum BodyMapMetalRenderStateBuilder {
                     colorScheme: colorScheme
                 )
             },
-            glowRadius: appearance.glowEnabled
+            glowRadius: glowEnabled
                 ? Float(styles.map(\.glow.radius).max() ?? 0)
                 : 0,
             shadowRadius: Float(styles.map(\.shadow.radius).max() ?? 0)

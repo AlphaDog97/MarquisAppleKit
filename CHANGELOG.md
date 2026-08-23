@@ -21,7 +21,9 @@
 
 - 公共 SwiftUI 组件改用语义字体角色。
 - GoalMaster 的引导和确认框视觉实现已移除业务命名，并改用 `AppTheme` 与 `HapticFeedback`。
+- `BodyMapAppearance` 重新公开 `inactiveColor`，允许业务侧覆盖人体基础轮廓颜色；`baseOpacity`、背景色和 glow 开关继续由 `BodyMap` 内部控制。
 
 ### Fixed
 
 - Coach Mark Overlay 会在延伸到全屏前保留真实安全区，避免说明卡进入状态栏或灵动岛区域。
+- `BodyMap` 人体轮廓底色在浅色和深色模式下默认统一使用 `Color.black.opacity(0.6)`，组件容器背景保持透明。

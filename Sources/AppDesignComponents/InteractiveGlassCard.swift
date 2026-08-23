@@ -31,6 +31,7 @@ public struct InteractiveGlassCard<Content: View>: View {
             style: .continuous
         )
 
+#if compiler(>=6.2)
         content
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(padding)
@@ -41,5 +42,11 @@ public struct InteractiveGlassCard<Content: View>: View {
                     .interactive(),
                 in: shape
             )
+#else
+        content
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(padding)
+            .contentShape(shape)
+#endif
     }
 }

@@ -60,7 +60,7 @@ struct BodyMapSideView: View {
                 )
             )
             .foregroundStyle(appearance.inactiveColor)
-            .opacity(appearance.baseOpacity)
+            .opacity(BodyMapBaseAppearance.baseOpacity)
 
             glowLayer
                 .blendMode(.screen)
@@ -71,7 +71,7 @@ struct BodyMapSideView: View {
 
     private var glowLayer: some View {
         ZStack {
-            if appearance.glowEnabled {
+            if BodyMapBaseAppearance.glowEnabled {
                 ForEach(assets) { asset in
                     if let style = appearance.style(for: asset.region),
                        style.glow.opacity > 0 {

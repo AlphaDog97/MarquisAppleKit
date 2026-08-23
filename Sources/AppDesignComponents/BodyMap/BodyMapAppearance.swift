@@ -1,5 +1,12 @@
 import SwiftUI
 
+enum BodyMapBaseAppearance {
+    static let inactiveColor = Color.black.opacity(0.6)
+    static let baseOpacity: Double = 1
+    static let backgroundColor = Color.clear
+    static let glowEnabled = true
+}
+
 public struct BodyMapAppearance {
     public let inactiveColor: Color
     public let inactiveRegionColor: Color
@@ -7,6 +14,13 @@ public struct BodyMapAppearance {
     public let backgroundColor: Color
     public let glowEnabled: Bool
     public let regionStyles: [BodyMapRegionStyle]
+
+    public init(regionStyles: [BodyMapRegionStyle] = []) {
+        self.init(
+            inactiveColor: BodyMapBaseAppearance.inactiveColor,
+            regionStyles: regionStyles
+        )
+    }
 
     public init(
         inactiveColor: Color = .secondary,

@@ -20,18 +20,37 @@ final class BodyMapTests: XCTestCase {
         XCTAssertEqual(uniform.shadowEnergy, 0.2)
     }
 
-    func testAppearancePreservesGlobalSettingsWhenRegionsChange() {
-        let appearance = BodyMapAppearance(
-            inactiveColor: .gray,
-            baseOpacity: 0.75,
-            glowEnabled: false
-        )
+    func testBaseAppearanceIsOwnedByComponent() {
+        XCTAssertEqual(BodyMapBaseAppearance.baseOpacity, 1)
+        XCTAssertTrue(BodyMapBaseAppearance.glowEnabled)
+    }
+
+    func testAppearanceStoresRegionStyles() {
+        let appearance = BodyMapAppearance(regionStyles: [
+            BodyMapRegionStyle(id: .chest, color: .red)
+        ])
+
+        XCTAssertEqual(appearance.regionStyles.count, 1)
+        XCTAssertEqual(appearance.regionStyles.first?.id, .chest)
+    }
+
+    func testAppearancePreservesCustomInactiveColorWhenRegionsChange() {
+        let appearance = BodyMapAppearance(inactiveColor: .red)
+        let updated = appearance.withRegions([
+            BodyMapRegionStyle(id: .chest, color: .blue)
+        ])
+
+        XCTAssertEqual(appearance.inactiveColor, .red)
+        XCTAssertEqual(updated.inactiveColor, .red)
+        XCTAssertEqual(updated.regionStyles.count, 1)
+    }
+
+    func testAppearanceUpdatesRegions() {
+        let appearance = BodyMapAppearance()
         let updated = appearance.withRegions([
             BodyMapRegionStyle(id: .chest, color: .red)
         ])
 
-        XCTAssertEqual(updated.baseOpacity, 0.75)
-        XCTAssertFalse(updated.glowEnabled)
         XCTAssertEqual(updated.regionStyles.count, 1)
         XCTAssertEqual(updated.regionStyles.first?.id, .chest)
     }
