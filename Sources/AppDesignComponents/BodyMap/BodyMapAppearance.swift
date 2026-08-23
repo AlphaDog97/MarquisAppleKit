@@ -1,5 +1,11 @@
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
 enum BodyMapBaseAppearance {
     static let inactiveColor = Color.black.opacity(0.6)
     static let baseOpacity: Double = 1
@@ -24,7 +30,24 @@ public struct BodyMapAppearance {
 
     public init(
         inactiveColor: Color = .secondary,
-        inactiveRegionColor: Color = Color(.tertiaryLabel),
+        baseOpacity: Double = 0.10,
+        backgroundColor: Color = .clear,
+        glowEnabled: Bool = true,
+        regionStyles: [BodyMapRegionStyle] = []
+    ) {
+        self.init(
+            inactiveColor: inactiveColor,
+            inactiveRegionColor: Self.defaultInactiveRegionColor,
+            baseOpacity: baseOpacity,
+            backgroundColor: backgroundColor,
+            glowEnabled: glowEnabled,
+            regionStyles: regionStyles
+        )
+    }
+
+    public init(
+        inactiveColor: Color = .secondary,
+        inactiveRegionColor: Color,
         baseOpacity: Double = 0.10,
         backgroundColor: Color = .clear,
         glowEnabled: Bool = true,
@@ -51,5 +74,15 @@ public struct BodyMapAppearance {
             glowEnabled: glowEnabled,
             regionStyles: regions
         )
+    }
+
+    private static var defaultInactiveRegionColor: Color {
+        #if canImport(UIKit)
+        Color(uiColor: .tertiaryLabel)
+        #elseif canImport(AppKit)
+        Color(nsColor: .tertiaryLabelColor)
+        #else
+        Color.secondary
+        #endif
     }
 }
