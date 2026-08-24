@@ -166,6 +166,7 @@ fragment float4 bodyMapFragment(
 ) {
     const float2 uv = input.texCoord;
     const uint assetCount = uint(frame.metadata.x);
+    const float innerGlowScale = frame.metadata.y;
 
     const float baseMask = masks.sample(bodyMapSampler, uv, 0).r;
     const float baseAlpha = baseMask * frame.baseColor.a;
@@ -177,13 +178,15 @@ fragment float4 bodyMapFragment(
     for (uint index = 0; index < assetCount; ++index) {
         const uint slice = index + 1;
         const BodyMapAssetUniforms asset = assets[index];
-
-        const float glowMask = glowMasks.sample(bodyMapSampler, uv, slice).r;
+        const float fillMask = masks.sample(bodyMapSampler, uv, slice).r;
         const float3 glowColor = bodyMapSRGBToLinear(asset.glowColor.rgb);
+
+        const float blurredGlowMask = glowMasks.sample(bodyMapSampler, uv, slice).r;
+        const float outerGlowMask = max(blurredGlowMask - fillMask, 0.0);
         result = bodyMapScreenOver(
             result,
             glowColor,
-            glowMask * asset.values.y * asset.glowColor.a
+            outerGlowMask * asset.values.y * asset.glowColor.a
         );
 
         const float shadowMask = shadowMasks.sample(bodyMapSampler, uv, slice).r;
@@ -207,12 +210,20 @@ fragment float4 bodyMapFragment(
             );
         }
 
-        const float fillMask = masks.sample(bodyMapSampler, uv, slice).r;
         const float3 fillColor = bodyMapSRGBToLinear(asset.fillColor.rgb);
         result = bodyMapSourceOver(
             result,
             fillColor,
             fillMask * asset.values.x * asset.fillColor.a
+        );
+
+        result = bodyMapScreenOver(
+            result,
+            glowColor,
+            fillMask
+                * asset.values.y
+                * asset.glowColor.a
+                * innerGlowScale
         );
     }
 

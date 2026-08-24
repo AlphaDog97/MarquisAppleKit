@@ -112,7 +112,12 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
 
         var frame = BodyMapMetalFrameUniforms(
             baseColor: state.baseColor,
-            metadata: SIMD4(Float(state.assets.count), 0, 0, 0)
+            metadata: SIMD4(
+                Float(state.assets.count),
+                Float(BodyMapGlowMetrics.innerOpacityScale),
+                0,
+                0
+            )
         )
         let assets = state.assets.map {
             BodyMapMetalAssetUniforms(

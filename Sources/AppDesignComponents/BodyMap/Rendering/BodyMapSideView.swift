@@ -68,6 +68,9 @@ struct BodyMapSideView: View {
                 .blendMode(.screen)
 
             fillLayer
+
+            innerGlowLayer
+                .blendMode(.screen)
         }
     }
 
@@ -77,12 +80,44 @@ struct BodyMapSideView: View {
                 ForEach(assets) { asset in
                     if let style = appearance.style(for: asset.region),
                        style.glow.opacity > 0 {
+                        outsideGlow(for: asset, style: style)
+                    }
+                }
+            }
+        }
+    }
+
+    private func outsideGlow(
+        for asset: BodyMapAnatomyAsset,
+        style: BodyMapRegionStyle
+    ) -> some View {
+        ZStack {
+            anatomyImage(assetName(for: asset))
+                .foregroundStyle(style.glow.color)
+                .blur(
+                    radius: style.glow.radius
+                        * BodyMapGlowMetrics.spreadScale
+                )
+
+            anatomyImage(assetName(for: asset))
+                .foregroundStyle(Color.black)
+                .blendMode(.destinationOut)
+        }
+        .compositingGroup()
+        .opacity(glowOpacity(for: style))
+    }
+
+    private var innerGlowLayer: some View {
+        ZStack {
+            if BodyMapBaseAppearance.glowEnabled {
+                ForEach(assets) { asset in
+                    if let style = appearance.style(for: asset.region),
+                       style.glow.opacity > 0 {
                         anatomyImage(assetName(for: asset))
                             .foregroundStyle(style.glow.color)
-                            .opacity(glowOpacity(for: style))
-                            .blur(
-                                radius: style.glow.radius
-                                    * BodyMapGlowMetrics.spreadScale
+                            .opacity(
+                                glowOpacity(for: style)
+                                    * BodyMapGlowMetrics.innerOpacityScale
                             )
                     }
                 }
@@ -212,7 +247,16 @@ struct BodyMapSideView: View {
 
     private func glowOpacity(for style: BodyMapRegionStyle) -> Double {
         let energy = max(1, style.glow.energy + configuration.shader.glowEnergy)
-        return min(max(style.glow.opacity * reveal(for: style) * energy, 0), 1)
+        return min(
+            max(
+                style.glow.opacity
+                    * reveal(for: style)
+                    * energy
+                    * BodyMapGlowMetrics.opacityScale,
+                0
+            ),
+            1
+        )
     }
 
     private func shadowOpacity(for style: BodyMapRegionStyle) -> Double {
