@@ -122,6 +122,12 @@ enum BodyMapMetalRenderStateBuilder {
         let fill = clamp(style.fillOpacity * reveal * configuration.shader.intensity)
         let glowEnergy = max(1, style.glow.energy + configuration.shader.glowEnergy)
         let shadowEnergy = max(1, style.shadow.energy + configuration.shader.shadowEnergy)
+        let glowOpacity = clamp(
+            style.glow.opacity
+                * reveal
+                * glowEnergy
+                * BodyMapGlowMetrics.opacityScale
+        )
 
         return .init(
             asset: asset,
@@ -129,7 +135,7 @@ enum BodyMapMetalRenderStateBuilder {
             glowColor: rgba(style.glow.color, colorScheme: colorScheme),
             shadowColor: rgba(style.shadow.color, colorScheme: colorScheme),
             fillOpacity: Float(fill),
-            glowOpacity: glowEnabled ? Float(clamp(style.glow.opacity * reveal * glowEnergy)) : 0,
+            glowOpacity: glowEnabled ? Float(glowOpacity) : 0,
             shadowOpacity: Float(clamp(style.shadow.opacity * reveal * shadowEnergy)),
             selectionOpacity: style.isSelected ? Float(reveal) : 0
         )
