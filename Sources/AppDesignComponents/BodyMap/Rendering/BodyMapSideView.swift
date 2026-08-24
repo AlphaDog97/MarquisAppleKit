@@ -68,6 +68,9 @@ struct BodyMapSideView: View {
                 .blendMode(.screen)
 
             fillLayer
+
+            innerGlowLayer
+                .blendMode(.screen)
         }
     }
 
@@ -102,6 +105,24 @@ struct BodyMapSideView: View {
         }
         .compositingGroup()
         .opacity(glowOpacity(for: style))
+    }
+
+    private var innerGlowLayer: some View {
+        ZStack {
+            if BodyMapBaseAppearance.glowEnabled {
+                ForEach(assets) { asset in
+                    if let style = appearance.style(for: asset.region),
+                       style.glow.opacity > 0 {
+                        anatomyImage(assetName(for: asset))
+                            .foregroundStyle(style.glow.color)
+                            .opacity(
+                                glowOpacity(for: style)
+                                    * BodyMapGlowMetrics.innerOpacityScale
+                            )
+                    }
+                }
+            }
+        }
     }
 
     private var fillLayer: some View {
