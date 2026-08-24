@@ -8,4 +8,9 @@ enum BodyMapGlowMetrics {
     /// Softens the halo globally while preserving each region's relative glow
     /// intensity and animation.
     static let opacityScale: Double = 0.55
+
+    /// Keeps a restrained amount of glow inside the highlighted anatomy after
+    /// the fill is drawn, so the region still feels illuminated without looking
+    /// like a solid neon layer.
+    static let innerOpacityScale: Double = 0.18
 }
