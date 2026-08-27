@@ -1,11 +1,15 @@
 #if canImport(UIKit)
 import MetalKit
 import SwiftUI
+import UIKit
 
 struct BodyMapMetalSurface: UIViewRepresentable {
     let state: BodyMapMetalRenderState
     let bundle: Bundle
     let animation: BodyMapAnimationConfiguration
+    let reveal: BodyMapRevealRequest?
+    let onFirstFrameRendered: (() -> Void)?
+    let onRevealCompleted: ((UUID) -> Void)?
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -19,14 +23,20 @@ struct BodyMapMetalSurface: UIViewRepresentable {
         view.isOpaque = false
         view.backgroundColor = .clear
         view.framebufferOnly = true
+        view.contentScaleFactor = min(UIScreen.main.scale, 2)
         view.enableSetNeedsDisplay = true
         view.isPaused = true
-        renderer.attach(to: view)
+        renderer.attach(
+            to: view,
+            onFirstFrameRendered: onFirstFrameRendered
+        )
         renderer.apply(
             state,
             bundle: bundle,
-            animationsEnabled: false,
-            transitionDuration: 0
+            animationsEnabled: animation.enabled,
+            transitionDuration: animation.transitionDuration,
+            reveal: reveal,
+            onRevealCompleted: onRevealCompleted
         )
         return view
     }
@@ -36,10 +46,18 @@ struct BodyMapMetalSurface: UIViewRepresentable {
             state,
             bundle: bundle,
             animationsEnabled: animation.enabled,
-            transitionDuration: animation.transitionDuration
+            transitionDuration: animation.transitionDuration,
+            reveal: reveal,
+            onRevealCompleted: onRevealCompleted
         )
     }
 
+    @MainActor
+    static func dismantleUIView(_ uiView: MTKView, coordinator: Coordinator) {
+        coordinator.renderer.detach()
+    }
+
+    @MainActor
     final class Coordinator {
         let renderer = BodyMapMetalRenderer()
     }

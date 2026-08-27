@@ -4,6 +4,8 @@ public struct BodyMap: View {
     private let configuration: BodyMapConfiguration
     private let appearance: BodyMapAppearance
     private let animation: BodyMapAnimationConfiguration
+    private let reveal: BodyMapRevealRequest?
+    private let onRevealCompleted: ((UUID) -> Void)?
     private let onRegionTap: ((BodyMapRegionID) -> Void)?
 
     public init(
@@ -11,11 +13,21 @@ public struct BodyMap: View {
         regions: [BodyMapRegionStyle],
         appearance: BodyMapAppearance = .init(),
         animation: BodyMapAnimationConfiguration = .init(),
+        revealID: UUID? = nil,
+        revealIntensities: [BodyMapRegionID: Double] = [:],
+        onRevealCompleted: ((UUID) -> Void)? = nil,
         onRegionTap: ((BodyMapRegionID) -> Void)? = nil
     ) {
         self.configuration = configuration
         self.appearance = appearance.withRegions(regions)
         self.animation = animation
+        self.reveal = revealID.map {
+            BodyMapRevealRequest(
+                id: $0,
+                regionIntensities: revealIntensities
+            )
+        }
+        self.onRevealCompleted = onRevealCompleted
         self.onRegionTap = onRegionTap
     }
 
@@ -24,6 +36,9 @@ public struct BodyMap: View {
         regions: [BodyMapRegionStyle],
         appearance: BodyMapAppearance = .init(),
         animation: BodyMapAnimationConfiguration = .init(),
+        revealID: UUID? = nil,
+        revealIntensities: [BodyMapRegionID: Double] = [:],
+        onRevealCompleted: ((UUID) -> Void)? = nil,
         onRegionTap: ((BodyMapRegionID) -> Void)? = nil
     ) {
         self.init(
@@ -31,6 +46,9 @@ public struct BodyMap: View {
             regions: regions,
             appearance: appearance,
             animation: animation,
+            revealID: revealID,
+            revealIntensities: revealIntensities,
+            onRevealCompleted: onRevealCompleted,
             onRegionTap: onRegionTap
         )
     }
@@ -38,11 +56,21 @@ public struct BodyMap: View {
     public init(
         appearance: BodyMapAppearance,
         animation: BodyMapAnimationConfiguration = .init(),
+        revealID: UUID? = nil,
+        revealIntensities: [BodyMapRegionID: Double] = [:],
+        onRevealCompleted: ((UUID) -> Void)? = nil,
         onRegionTap: ((BodyMapRegionID) -> Void)? = nil
     ) {
         self.configuration = .init()
         self.appearance = appearance
         self.animation = animation
+        self.reveal = revealID.map {
+            BodyMapRevealRequest(
+                id: $0,
+                regionIntensities: revealIntensities
+            )
+        }
+        self.onRevealCompleted = onRevealCompleted
         self.onRegionTap = onRegionTap
     }
 
@@ -51,6 +79,8 @@ public struct BodyMap: View {
             configuration: configuration,
             appearance: appearance,
             animation: animation,
+            reveal: reveal,
+            onRevealCompleted: onRevealCompleted,
             onRegionTap: onRegionTap
         )
     }

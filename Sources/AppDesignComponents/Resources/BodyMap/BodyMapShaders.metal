@@ -37,6 +37,8 @@ struct BodyMapAssetUniforms {
     float4 glowColor;
     float4 shadowColor;
     float4 values;
+    float4 reveal;
+    float4 bounds;
 };
 
 struct BodyMapVertexOut {
@@ -118,6 +120,61 @@ static float3 bodyMapSRGBToLinear(float3 value) {
     return select(high, low, value <= 0.04045);
 }
 
+static float bodyMapSmootherProgress(float progress) {
+    const float value = clamp(progress, 0.0, 1.0);
+    return value * value * value
+        * (value * (value * 6.0 - 15.0) + 10.0);
+}
+
+static float bodyMapGlowBrightnessProgress(float3 linearColor) {
+    const float luminance = dot(
+        linearColor,
+        float3(0.2126, 0.7152, 0.0722)
+    );
+    return smoothstep(0.35, 0.75, luminance);
+}
+
+static float bodyMapOuterGlowEnergyScale(float brightnessProgress) {
+    return mix(1.0, 0.30, brightnessProgress);
+}
+
+static float bodyMapInnerGlowEnergyScale(float brightnessProgress) {
+    return mix(1.0, 0.55, brightnessProgress);
+}
+
+static float bodyMapBloomMask(
+    float blurredMask,
+    float fillMask,
+    float revealProgress,
+    float brightnessProgress
+) {
+    const float progress = bodyMapSmootherProgress(revealProgress);
+    const float rawOuterMask = max(blurredMask - fillMask, 0.0);
+    const float profileExponent = mix(1.0, 1.12, brightnessProgress);
+    const float outerMask = pow(
+        clamp(rawOuterMask, 0.0, 1.0),
+        profileExponent
+    );
+
+    const float tightThreshold = mix(0.30, 0.32, brightnessProgress);
+    const float tightFeather = 0.10;
+    const float tightMask = smoothstep(
+        tightThreshold - tightFeather,
+        tightThreshold + tightFeather,
+        blurredMask
+    );
+
+    const float finalThreshold = mix(0.015, 0.09, brightnessProgress);
+    const float finalFeather = mix(0.09, 0.11, brightnessProgress);
+    const float finalMask = smoothstep(
+        finalThreshold - finalFeather,
+        finalThreshold + finalFeather,
+        blurredMask
+    );
+
+    return outerMask * mix(tightMask, finalMask, progress);
+}
+
 static float4 bodyMapSourceOver(
     float4 destination,
     float3 sourceColor,
@@ -146,7 +203,9 @@ static float4 bodyMapScreenOver(
         : float3(0.0);
     const float3 blended = 1.0
         - (1.0 - destinationColor) * (1.0 - sourceColor);
-    const float outputAlpha = alpha + destinationAlpha - alpha * destinationAlpha;
+    const float outputAlpha = alpha
+        + destinationAlpha
+        - alpha * destinationAlpha;
     const float3 outputColor =
         (1.0 - destinationAlpha) * sourceColor * alpha
         + (1.0 - alpha) * destination.rgb
@@ -167,6 +226,7 @@ fragment float4 bodyMapFragment(
     const float2 uv = input.texCoord;
     const uint assetCount = uint(frame.metadata.x);
     const float innerGlowScale = frame.metadata.y;
+    constexpr float contributionEpsilon = 0.0001;
 
     const float baseMask = masks.sample(bodyMapSampler, uv, 0).r;
     const float baseAlpha = baseMask * frame.baseColor.a;
@@ -178,26 +238,95 @@ fragment float4 bodyMapFragment(
     for (uint index = 0; index < assetCount; ++index) {
         const uint slice = index + 1;
         const BodyMapAssetUniforms asset = assets[index];
-        const float fillMask = masks.sample(bodyMapSampler, uv, slice).r;
-        const float3 glowColor = bodyMapSRGBToLinear(asset.glowColor.rgb);
-
-        const float blurredGlowMask = glowMasks.sample(bodyMapSampler, uv, slice).r;
-        const float outerGlowMask = max(blurredGlowMask - fillMask, 0.0);
-        result = bodyMapScreenOver(
-            result,
-            glowColor,
-            outerGlowMask * asset.values.y * asset.glowColor.a
+        const float fillContribution = asset.values.x
+            * asset.fillColor.a
+            * max(asset.reveal.x, 0.0);
+        const float glowReveal = max(asset.reveal.y, 0.0);
+        const float glowContribution = asset.values.y
+            * asset.glowColor.a
+            * glowReveal;
+        const float shadowContribution = asset.values.z
+            * asset.shadowColor.a
+            * max(asset.reveal.z, 0.0);
+        const float selectionContribution = asset.values.w
+            * max(asset.reveal.w, 0.0);
+        const float maximumContribution = max(
+            max(fillContribution, glowContribution),
+            max(shadowContribution, selectionContribution)
         );
+        if (maximumContribution <= contributionEpsilon) {
+            continue;
+        }
 
-        const float shadowMask = shadowMasks.sample(bodyMapSampler, uv, slice).r;
-        const float3 shadowColor = bodyMapSRGBToLinear(asset.shadowColor.rgb);
-        result = bodyMapSourceOver(
-            result,
-            shadowColor,
-            shadowMask * asset.values.z * asset.shadowColor.a
-        );
+        const float4 bounds = asset.bounds;
+        if (uv.x < bounds.x
+            || uv.y < bounds.y
+            || uv.x > bounds.z
+            || uv.y > bounds.w) {
+            continue;
+        }
 
-        if (asset.values.w > 0.001) {
+        float fillMask = 0.0;
+        if (fillContribution > contributionEpsilon
+            || glowContribution > contributionEpsilon) {
+            fillMask = masks.sample(
+                bodyMapSampler,
+                uv,
+                slice
+            ).r;
+        }
+
+        float3 glowColor = float3(0.0);
+        float outerGlowEnergyScale = 1.0;
+        float innerGlowEnergyScale = 1.0;
+        if (glowContribution > contributionEpsilon) {
+            glowColor = bodyMapSRGBToLinear(asset.glowColor.rgb);
+            const float glowBrightnessProgress =
+                bodyMapGlowBrightnessProgress(glowColor);
+            outerGlowEnergyScale = bodyMapOuterGlowEnergyScale(
+                glowBrightnessProgress
+            );
+            innerGlowEnergyScale = bodyMapInnerGlowEnergyScale(
+                glowBrightnessProgress
+            );
+
+            const float blurredGlowMask = glowMasks.sample(
+                bodyMapSampler,
+                uv,
+                slice
+            ).r;
+            const float outerGlowMask = bodyMapBloomMask(
+                blurredGlowMask,
+                fillMask,
+                glowReveal,
+                glowBrightnessProgress
+            );
+            result = bodyMapScreenOver(
+                result,
+                glowColor,
+                outerGlowMask
+                    * glowContribution
+                    * outerGlowEnergyScale
+            );
+        }
+
+        if (shadowContribution > contributionEpsilon) {
+            const float shadowMask = shadowMasks.sample(
+                bodyMapSampler,
+                uv,
+                slice
+            ).r;
+            const float3 shadowColor = bodyMapSRGBToLinear(
+                asset.shadowColor.rgb
+            );
+            result = bodyMapSourceOver(
+                result,
+                shadowColor,
+                shadowMask * shadowContribution
+            );
+        }
+
+        if (selectionContribution > contributionEpsilon) {
             const float selectionMask = selectionMasks.sample(
                 bodyMapSampler,
                 uv,
@@ -206,25 +335,33 @@ fragment float4 bodyMapFragment(
             result = bodyMapSourceOver(
                 result,
                 float3(1.0),
-                selectionMask * 0.65 * asset.values.w
+                selectionMask
+                    * 0.65
+                    * selectionContribution
             );
         }
 
-        const float3 fillColor = bodyMapSRGBToLinear(asset.fillColor.rgb);
-        result = bodyMapSourceOver(
-            result,
-            fillColor,
-            fillMask * asset.values.x * asset.fillColor.a
-        );
+        if (fillContribution > contributionEpsilon) {
+            const float3 fillColor = bodyMapSRGBToLinear(
+                asset.fillColor.rgb
+            );
+            result = bodyMapSourceOver(
+                result,
+                fillColor,
+                fillMask * fillContribution
+            );
+        }
 
-        result = bodyMapScreenOver(
-            result,
-            glowColor,
-            fillMask
-                * asset.values.y
-                * asset.glowColor.a
-                * innerGlowScale
-        );
+        if (glowContribution > contributionEpsilon) {
+            result = bodyMapScreenOver(
+                result,
+                glowColor,
+                fillMask
+                    * glowContribution
+                    * innerGlowScale
+                    * innerGlowEnergyScale
+            );
+        }
     }
 
     return result;
