@@ -6,6 +6,7 @@ struct BodyMapMaskBitmap {
     let width: Int
     let height: Int
     let bytes: [UInt8]
+    let normalizedBounds: SIMD4<Float>
 }
 
 enum BodyMapMaskRasterizer {
@@ -15,6 +16,7 @@ enum BodyMapMaskRasterizer {
         case invalidImageSize(CGSize)
         case invalidPDF(URL)
         case missingPDFPage(URL)
+        case missingSourceImage
         case missingRasterizedImage
         case bitmapContextCreationFailed
     }
@@ -26,20 +28,17 @@ enum BodyMapMaskRasterizer {
         guard image.size.width > 0, image.size.height > 0 else {
             throw RasterizationError.invalidImageSize(image.size)
         }
-
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = scale
-        format.opaque = false
-
-        let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
-        let rasterized = renderer.image { _ in
-            image.draw(in: CGRect(origin: .zero, size: image.size))
-        }
-        guard let cgImage = rasterized.cgImage else {
-            throw RasterizationError.missingRasterizedImage
+        guard let cgImage = image.cgImage else {
+            throw RasterizationError.missingSourceImage
         }
 
-        return try alphaBitmap(from: cgImage)
+        let width = Int((image.size.width * scale).rounded())
+        let height = Int((image.size.height * scale).rounded())
+        return try alphaBitmap(
+            from: cgImage,
+            width: width,
+            height: height
+        )
     }
 
     static func rasterizePDF(
@@ -50,7 +49,11 @@ enum BodyMapMaskRasterizer {
         guard let cgImage = rasterized.cgImage else {
             throw RasterizationError.missingRasterizedImage
         }
-        return try alphaBitmap(from: cgImage)
+        return try alphaBitmap(
+            from: cgImage,
+            width: cgImage.width,
+            height: cgImage.height
+        )
     }
 
     static func rasterizedPDFImage(
@@ -89,9 +92,11 @@ enum BodyMapMaskRasterizer {
         return rasterized
     }
 
-    private static func alphaBitmap(from cgImage: CGImage) throws -> BodyMapMaskBitmap {
-        let width = cgImage.width
-        let height = cgImage.height
+    private static func alphaBitmap(
+        from cgImage: CGImage,
+        width: Int,
+        height: Int
+    ) throws -> BodyMapMaskBitmap {
         let bytesPerPixel = 4
         let bytesPerRow = width * bytesPerPixel
         var rgba = [UInt8](repeating: 0, count: bytesPerRow * height)
@@ -111,6 +116,7 @@ enum BodyMapMaskRasterizer {
                 return false
             }
 
+            context.interpolationQuality = .high
             context.translateBy(x: 0, y: CGFloat(height))
             context.scaleBy(x: 1, y: -1)
             context.draw(
@@ -125,16 +131,67 @@ enum BodyMapMaskRasterizer {
         }
 
         var alpha = [UInt8](repeating: 0, count: width * height)
-        for destinationRow in 0..<height {
-            let sourceRow = height - 1 - destinationRow
-            for column in 0..<width {
-                alpha[destinationRow * width + column] = rgba[
-                    sourceRow * bytesPerRow + column * bytesPerPixel + 3
-                ]
+        var minimumColumn = width
+        var minimumRow = height
+        var maximumColumn = -1
+        var maximumRow = -1
+
+        alpha.withUnsafeMutableBytes { destination in
+            rgba.withUnsafeBytes { source in
+                guard let destinationAddress = destination.baseAddress,
+                      let sourceAddress = source.baseAddress else {
+                    return
+                }
+
+                for destinationRow in 0..<height {
+                    let sourceRow = height - 1 - destinationRow
+                    let sourceRowAddress = sourceAddress.advanced(
+                        by: sourceRow * bytesPerRow
+                    )
+                    let destinationRowAddress = destinationAddress.advanced(
+                        by: destinationRow * width
+                    )
+
+                    for column in 0..<width {
+                        let value = sourceRowAddress.load(
+                            fromByteOffset: column * bytesPerPixel + 3,
+                            as: UInt8.self
+                        )
+                        destinationRowAddress.storeBytes(
+                            of: value,
+                            toByteOffset: column,
+                            as: UInt8.self
+                        )
+
+                        guard value > 0 else { continue }
+                        minimumColumn = min(minimumColumn, column)
+                        minimumRow = min(minimumRow, destinationRow)
+                        maximumColumn = max(maximumColumn, column)
+                        maximumRow = max(maximumRow, destinationRow)
+                    }
+                }
             }
         }
 
-        return BodyMapMaskBitmap(width: width, height: height, bytes: alpha)
+        let normalizedBounds: SIMD4<Float>
+        if maximumColumn >= minimumColumn,
+           maximumRow >= minimumRow {
+            normalizedBounds = SIMD4(
+                Float(minimumColumn) / Float(width),
+                Float(minimumRow) / Float(height),
+                Float(maximumColumn + 1) / Float(width),
+                Float(maximumRow + 1) / Float(height)
+            )
+        } else {
+            normalizedBounds = .zero
+        }
+
+        return BodyMapMaskBitmap(
+            width: width,
+            height: height,
+            bytes: alpha,
+            normalizedBounds: normalizedBounds
+        )
     }
 }
 #endif
