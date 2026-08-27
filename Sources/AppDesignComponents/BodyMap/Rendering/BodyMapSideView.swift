@@ -14,6 +14,9 @@ struct BodyMapSideView: View {
     let configuration: BodyMapConfiguration
     let appearance: BodyMapAppearance
     let animation: BodyMapAnimationConfiguration
+    let reveal: BodyMapRevealRequest?
+    let onFirstFrameRendered: (() -> Void)?
+    let onRevealCompleted: ((UUID) -> Void)?
     let onRegionTap: ((BodyMapRegionID) -> Void)?
 
     private var assets: [BodyMapAnatomyAsset] {
@@ -42,7 +45,10 @@ struct BodyMapSideView: View {
                     colorScheme: colorScheme
                 ),
                 bundle: configuration.resources.bundle,
-                animation: animation
+                animation: animation,
+                reveal: reveal,
+                onFirstFrameRendered: onFirstFrameRendered,
+                onRevealCompleted: onRevealCompleted
             )
             .accessibilityHidden(true)
         case .staticExport:
@@ -138,7 +144,7 @@ struct BodyMapSideView: View {
                         )
                         .shadow(
                             color: style.isSelected
-                                ? Color.white.opacity(0.65 * reveal(for: style))
+                                ? Color.white.opacity(0.65 * revealFactor(for: style))
                                 : .clear,
                             radius: 3
                         )
@@ -229,7 +235,7 @@ struct BodyMapSideView: View {
     }
     #endif
 
-    private func reveal(for style: BodyMapRegionStyle) -> Double {
+    private func revealFactor(for style: BodyMapRegionStyle) -> Double {
         min(max(style.revealFactor, 0), 1)
     }
 
@@ -237,7 +243,7 @@ struct BodyMapSideView: View {
         min(
             max(
                 style.fillOpacity
-                    * reveal(for: style)
+                    * revealFactor(for: style)
                     * configuration.shader.intensity,
                 0
             ),
@@ -250,7 +256,7 @@ struct BodyMapSideView: View {
         return min(
             max(
                 style.glow.opacity
-                    * reveal(for: style)
+                    * revealFactor(for: style)
                     * energy
                     * BodyMapGlowMetrics.opacityScale,
                 0
@@ -261,6 +267,14 @@ struct BodyMapSideView: View {
 
     private func shadowOpacity(for style: BodyMapRegionStyle) -> Double {
         let energy = max(1, style.shadow.energy + configuration.shader.shadowEnergy)
-        return min(max(style.shadow.opacity * reveal(for: style) * energy, 0), 1)
+        return min(
+            max(
+                style.shadow.opacity
+                    * revealFactor(for: style)
+                    * energy,
+                0
+            ),
+            1
+        )
     }
 }
