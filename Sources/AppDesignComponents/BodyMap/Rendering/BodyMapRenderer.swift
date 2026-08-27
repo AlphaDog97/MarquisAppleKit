@@ -1,5 +1,9 @@
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 struct BodyMapRenderer: View {
     @Environment(\.bodyMapRenderingMode) private var renderingMode
 
