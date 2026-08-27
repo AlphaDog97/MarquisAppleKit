@@ -53,6 +53,11 @@ struct BodyMapMetalSurface: UIViewRepresentable {
     }
 
     @MainActor
+    static func dismantleUIView(_ uiView: MTKView, coordinator: Coordinator) {
+        coordinator.renderer.detach()
+    }
+
+    @MainActor
     final class Coordinator {
         let renderer = BodyMapMetalRenderer()
     }
