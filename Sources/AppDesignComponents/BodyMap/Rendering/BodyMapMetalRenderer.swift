@@ -3,7 +3,8 @@ import Foundation
 import MetalKit
 import QuartzCore
 
-final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
+@MainActor
+final class BodyMapMetalRenderer: NSObject, @preconcurrency MTKViewDelegate {
     let device: MTLDevice
 
     private static let hiddenRevealProgress = BodyMapRevealProgress(
@@ -187,7 +188,7 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
         let pendingRevealID = pendingReveal?.request.id
         if let pendingRevealID {
             commandBuffer.addCompletedHandler { [weak self] _ in
-                DispatchQueue.main.async {
+                Task { @MainActor [weak self] in
                     self?.beginPendingRevealIfNeeded(id: pendingRevealID)
                 }
             }
@@ -195,10 +196,9 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
 
         if !hasScheduledFirstFrameCompletion {
             hasScheduledFirstFrameCompletion = true
-            let completion = onFirstFrameRendered
-            commandBuffer.addCompletedHandler { _ in
-                DispatchQueue.main.async {
-                    completion?()
+            commandBuffer.addCompletedHandler { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.notifyFirstFrameRendered()
                 }
             }
         }
@@ -221,6 +221,10 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
             return
         }
         view.draw()
+    }
+
+    private func notifyFirstFrameRendered() {
+        onFirstFrameRendered?()
     }
 
     private func prepareAssetUniforms(
@@ -578,6 +582,7 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
     }
 }
 
+@MainActor
 private final class BodyMapDisplayLinkTarget: NSObject {
     weak var renderer: BodyMapMetalRenderer?
 
