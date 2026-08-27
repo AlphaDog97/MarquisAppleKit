@@ -4,7 +4,7 @@ import MetalKit
 import QuartzCore
 
 @MainActor
-final class BodyMapMetalRenderer: NSObject, @preconcurrency MTKViewDelegate {
+final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
     let device: MTLDevice
 
     private static let hiddenRevealProgress = BodyMapRevealProgress(
@@ -46,11 +46,6 @@ final class BodyMapMetalRenderer: NSObject, @preconcurrency MTKViewDelegate {
         super.init()
     }
 
-    deinit {
-        revealStartWorkItem?.cancel()
-        displayLink?.invalidate()
-    }
-
     func attach(
         to view: MTKView,
         onFirstFrameRendered: (() -> Void)? = nil
@@ -58,6 +53,13 @@ final class BodyMapMetalRenderer: NSObject, @preconcurrency MTKViewDelegate {
         self.view = view
         self.onFirstFrameRendered = onFirstFrameRendered
         view.delegate = self
+    }
+
+    func detach() {
+        cancelScheduledRevealStart()
+        setDisplayLinkActive(false)
+        view?.delegate = nil
+        view = nil
     }
 
     func apply(
