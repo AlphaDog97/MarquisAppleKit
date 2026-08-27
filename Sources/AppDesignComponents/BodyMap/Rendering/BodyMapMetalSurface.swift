@@ -52,6 +52,7 @@ struct BodyMapMetalSurface: UIViewRepresentable {
         )
     }
 
+    @MainActor
     final class Coordinator {
         let renderer = BodyMapMetalRenderer()
     }
