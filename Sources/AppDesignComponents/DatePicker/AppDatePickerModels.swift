@@ -33,9 +33,23 @@ public struct AppDatePickerSummaryItem: Identifiable {
 
 public struct AppDatePickerLabels {
     public let rangeToggleTitle: String
+    public let monthPickerTitle: String
+    public let monthLabel: String
+    public let yearLabel: String
+    public let doneAccessibilityLabel: String
 
-    public init(rangeToggleTitle: String = "Select range") {
+    public init(
+        rangeToggleTitle: String = "Select range",
+        monthPickerTitle: String = "Choose month",
+        monthLabel: String = "Month",
+        yearLabel: String = "Year",
+        doneAccessibilityLabel: String = "Done"
+    ) {
         self.rangeToggleTitle = rangeToggleTitle
+        self.monthPickerTitle = monthPickerTitle
+        self.monthLabel = monthLabel
+        self.yearLabel = yearLabel
+        self.doneAccessibilityLabel = doneAccessibilityLabel
     }
 }
 
