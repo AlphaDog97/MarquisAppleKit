@@ -16,6 +16,8 @@
 - 增加统一 Action Prompt 确认框，支持信息、警告、完成、替换和破坏性操作。
 - 增加包含 App 图标、App 名称、自定义内容、系统分享与保存到照片操作的 `AppSharePreviewSheet`。
 - 增加 `AppDesignComponentsTests`，覆盖 Coach Mark、Action Prompt 与 Share Preview 公共模型。
+- 增加业务无关的 `AppDatePicker`，支持单日/范围选择、日期约束、排除日期、首日配置和可注入日期装饰。
+- 增加 `AppClockTimePickerField`、`AppDateTimeClockPickerField` 与 `AppCompactClockTimePickerButton`，提供 24 小时双环表盘和日期时间组合选择。
 
 ### Changed
 
