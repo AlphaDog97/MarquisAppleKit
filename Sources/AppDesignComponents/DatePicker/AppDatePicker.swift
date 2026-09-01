@@ -63,8 +63,12 @@ public struct AppDatePicker: View {
         let components = initialCalendar.dateComponents([.year, .month], from: initialDate)
         let month = initialCalendar.date(from: components) ?? initialDate
         self._referenceMonth = State(initialValue: month)
-        self._monthPickerYear = State(initialValue: components.year ?? initialCalendar.component(.year, from: initialDate))
-        self._monthPickerMonth = State(initialValue: components.month ?? initialCalendar.component(.month, from: initialDate))
+        self._monthPickerYear = State(
+            initialValue: components.year ?? initialCalendar.component(.year, from: initialDate)
+        )
+        self._monthPickerMonth = State(
+            initialValue: components.month ?? initialCalendar.component(.month, from: initialDate)
+        )
     }
 
     public var body: some View {
@@ -195,63 +199,35 @@ public struct AppDatePicker: View {
     }
 
     private func monthGrid(for month: Date) -> some View {
-        let days = daysInMonth(month)
-        let leadingSpaces = leadingSpaceCount(for: month)
-
-        return LazyVGrid(columns: weekdayColumns, spacing: AppSpacing.extraSmall) {
-            ForEach(0..<leadingSpaces, id: \.self) { _ in
-                Color.clear.frame(height: 48)
-            }
-
-            ForEach(days, id: \.self) { date in
-                AppDatePickerDayCell(
-                    day: calendar.component(.day, from: date),
-                    isToday: calendar.isDateInToday(date),
-                    isEndpoint: isEndpoint(date),
-                    isInRange: isInSelectedRange(date),
-                    isEnabled: isSelectable(date),
-                    accent: accent,
-                    theme: theme,
-                    decoration: decoration(for: date)
-                ) {
-                    select(date)
-                }
-            }
-        }
+        AppDatePickerMonthGrid(
+            month: month,
+            calendar: calendar,
+            firstWeekday: firstWeekday,
+            beginDate: beginDate,
+            endDate: endDate,
+            isDateRange: isDateRange,
+            minimumDate: minimumDate,
+            maximumDate: maximumDate,
+            excludedDates: excludedDates,
+            decorations: decorations,
+            accent: accent,
+            theme: theme,
+            onSelect: select
+        )
     }
 
     private var monthPickerSheet: some View {
-        NavigationStack {
-            HStack(spacing: AppSpacing.large) {
-                Picker("Month", selection: $monthPickerMonth) {
-                    ForEach(1...12, id: \.self) { month in
-                        if let date = calendar.date(from: DateComponents(year: monthPickerYear, month: month, day: 1)) {
-                            Text(date, format: .dateTime.month(.wide)).tag(month)
-                        }
-                    }
-                }
-
-                Picker("Year", selection: $monthPickerYear) {
-                    ForEach(Array(resolvedYearRange), id: \.self) { year in
-                        Text(String(year)).tag(year)
-                    }
-                }
-            }
-            .padding(AppSpacing.large)
-            .navigationTitle(Text(visibleMonth, format: .dateTime.month(.wide).year()))
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        applyMonthPickerSelection()
-                        showsMonthPicker = false
-                    } label: {
-                        Image(systemName: "checkmark")
-                    }
-                    .foregroundStyle(accent)
-                }
-            }
+        AppDatePickerMonthSelector(
+            year: $monthPickerYear,
+            month: $monthPickerMonth,
+            yearRange: resolvedYearRange,
+            calendar: calendar,
+            accent: accent,
+            labels: labels
+        ) {
+            applyMonthPickerSelection()
+            showsMonthPicker = false
         }
-        .appDatePickerPresentation()
     }
 
     private var visibleMonth: Date {
@@ -259,7 +235,11 @@ public struct AppDatePicker: View {
     }
 
     private func month(at offset: Int) -> Date {
-        calendar.date(byAdding: .month, value: offset, to: startOfMonth(referenceMonth)) ?? referenceMonth
+        calendar.date(
+            byAdding: .month,
+            value: offset,
+            to: startOfMonth(referenceMonth)
+        ) ?? referenceMonth
     }
 
     private func startOfMonth(_ date: Date) -> Date {
@@ -283,50 +263,10 @@ public struct AppDatePicker: View {
         guard !symbols.isEmpty else { return [] }
         let requestedFirst = min(max(firstWeekday ?? calendar.firstWeekday, 1), symbols.count)
         let startIndex = requestedFirst - 1
-        return Array(symbols[startIndex...] + symbols[..<startIndex])
-    }
-
-    private func daysInMonth(_ month: Date) -> [Date] {
-        let start = startOfMonth(month)
-        guard let dayRange = calendar.range(of: .day, in: .month, for: start) else { return [] }
-        return dayRange.compactMap { day in
-            calendar.date(byAdding: .day, value: day - 1, to: start)
-        }
-    }
-
-    private func leadingSpaceCount(for month: Date) -> Int {
-        let weekday = calendar.component(.weekday, from: startOfMonth(month))
-        let first = min(max(firstWeekday ?? calendar.firstWeekday, 1), 7)
-        return (weekday - first + 7) % 7
-    }
-
-    private func isSelectable(_ date: Date) -> Bool {
-        let day = calendar.startOfDay(for: date)
-        if let minimumDate, day < calendar.startOfDay(for: minimumDate) { return false }
-        if let maximumDate, day > calendar.startOfDay(for: maximumDate) { return false }
-        return !excludedDates.contains { calendar.isDate($0, inSameDayAs: day) }
-    }
-
-    private func isEndpoint(_ date: Date) -> Bool {
-        if let beginDate, calendar.isDate(beginDate, inSameDayAs: date) { return true }
-        if let endDate, calendar.isDate(endDate, inSameDayAs: date) { return true }
-        return false
-    }
-
-    private func isInSelectedRange(_ date: Date) -> Bool {
-        guard isDateRange, let beginDate, let endDate else { return false }
-        let day = calendar.startOfDay(for: date)
-        return day >= calendar.startOfDay(for: beginDate) && day <= calendar.startOfDay(for: endDate)
-    }
-
-    private func decoration(for date: Date) -> AppDatePickerDecoration? {
-        let day = calendar.startOfDay(for: date)
-        if let exact = decorations[day] { return exact }
-        return decorations.first { calendar.isDate($0.key, inSameDayAs: day) }?.value
+        return Array(symbols[startIndex...]) + Array(symbols[..<startIndex])
     }
 
     private func select(_ date: Date) {
-        guard isSelectable(date) else { return }
         let day = calendar.startOfDay(for: date)
         let selection = AppDatePickerSelectionLogic.select(
             day,
@@ -339,7 +279,8 @@ public struct AppDatePicker: View {
     }
 
     private func syncMonthPickerState() {
-        monthPickerYear = calendar.component(.year, from: visibleMonth)
+        let visibleYear = calendar.component(.year, from: visibleMonth)
+        monthPickerYear = min(max(visibleYear, resolvedYearRange.lowerBound), resolvedYearRange.upperBound)
         monthPickerMonth = calendar.component(.month, from: visibleMonth)
     }
 
@@ -351,17 +292,5 @@ public struct AppDatePicker: View {
         referenceMonth = month
         pageOffset = 0
         onVisibleMonthChange?(month)
-    }
-}
-
-private extension View {
-    @ViewBuilder
-    func appDatePickerPresentation() -> some View {
-        #if os(iOS)
-        presentationDetents([.fraction(0.32)])
-            .presentationDragIndicator(.visible)
-        #else
-        self
-        #endif
     }
 }
