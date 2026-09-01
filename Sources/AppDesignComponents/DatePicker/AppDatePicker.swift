@@ -140,9 +140,12 @@ public struct AppDatePicker: View {
     }
 
     private func monthNavigationButton(systemImage: String, delta: Int) -> some View {
-        Button {
+        let targetOffset = pageOffset + delta
+
+        return Button {
+            guard (-120...120).contains(targetOffset) else { return }
             withAnimation(AppMotion.standard) {
-                pageOffset += delta
+                pageOffset = targetOffset
             }
         } label: {
             Image(systemName: systemImage)
@@ -153,6 +156,7 @@ public struct AppDatePicker: View {
                 .overlay(Circle().stroke(theme.border, lineWidth: 1))
         }
         .buttonStyle(.plain)
+        .disabled(!(-120...120).contains(targetOffset))
     }
 
     private var summaryRow: some View {
