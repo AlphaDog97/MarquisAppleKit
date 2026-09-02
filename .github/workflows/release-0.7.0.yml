@@ -1,0 +1,88 @@
+name: Release 0.7.0
+
+on:
+  pull_request:
+    paths:
+      - 'Sources/AppDesignComponents/BodyMap/**'
+      - 'Sources/AppDesignComponents/Resources/BodyMap/**'
+      - 'Tests/AppDesignComponentsTests/BodyMapTests.swift'
+      - 'CHANGELOG.md'
+      - '.github/workflows/release-0.7.0.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'Sources/AppDesignComponents/BodyMap/**'
+      - 'Sources/AppDesignComponents/Resources/BodyMap/**'
+      - 'Tests/AppDesignComponentsTests/BodyMapTests.swift'
+      - 'CHANGELOG.md'
+      - '.github/workflows/release-0.7.0.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-release:
+    runs-on: macos-15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Select newest Xcode
+        run: |
+          BEST_APP=""
+          BEST_MAJOR=0
+          for APP in /Applications/Xcode*.app; do
+            VERSION="$($APP/Contents/Developer/usr/bin/xcodebuild -version | head -1 | awk '{print $2}')"
+            MAJOR="${VERSION%%.*}"
+            if [[ "$MAJOR" =~ ^[0-9]+$ ]] && (( MAJOR > BEST_MAJOR )); then
+              BEST_MAJOR="$MAJOR"
+              BEST_APP="$APP"
+            fi
+          done
+          test -n "$BEST_APP"
+          sudo xcode-select --switch "$BEST_APP/Contents/Developer"
+          xcodebuild -version
+
+      - name: Run package tests
+        run: swift test
+
+      - name: Build AppDesignComponents for iOS Simulator
+        run: |
+          xcodebuild \
+            -scheme AppDesignComponents \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/MarquisAppleKitDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Create semantic version tag
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if git rev-parse "0.7.0" >/dev/null 2>&1; then
+            echo "Tag 0.7.0 already exists."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "0.7.0" -m "MarquisAppleKit 0.7.0"
+          git push origin "0.7.0"
+
+      - name: Publish GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "0.7.0" >/dev/null 2>&1; then
+            echo "Release 0.7.0 already exists."
+            exit 0
+          fi
+
+          gh release create "0.7.0" \
+            --verify-tag \
+            --title "MarquisAppleKit 0.7.0" \
+            --generate-notes
