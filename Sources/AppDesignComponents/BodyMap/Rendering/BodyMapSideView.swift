@@ -26,7 +26,6 @@ struct BodyMapSideView: View {
     var body: some View {
         ZStack {
             visualLayer
-                .bodyMapMorphologyEffect(configuration.morphology)
             interactionLayer
         }
         .aspectRatio(309.014 / 800, contentMode: .fit)
@@ -79,6 +78,7 @@ struct BodyMapSideView: View {
             innerGlowLayer
                 .blendMode(.screen)
         }
+        .bodyMapMorphologyEffect(configuration.morphology)
     }
 
     private var glowLayer: some View {
