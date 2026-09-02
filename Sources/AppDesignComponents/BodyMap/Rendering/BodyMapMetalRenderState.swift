@@ -5,6 +5,7 @@ import UIKit
 struct BodyMapMetalRenderState: Equatable {
     let model: BodyMapModel
     let side: BodyMapAnatomySide
+    let morphology: BodyMapMorphology
     let baseColor: SIMD4<Float>
     let assets: [Asset]
     let glowRadius: Float
@@ -32,6 +33,10 @@ struct BodyMapMetalRenderState: Equatable {
         return Self(
             model: model,
             side: side,
+            morphology: morphology.interpolated(
+                from: start.morphology,
+                progress: t
+            ),
             baseColor: mix(start.baseColor, baseColor, t),
             assets: zip(start.assets, assets).map { source, target in
                 Asset(
@@ -74,6 +79,7 @@ enum BodyMapMetalRenderStateBuilder {
         return BodyMapMetalRenderState(
             model: configuration.model,
             side: side,
+            morphology: configuration.morphology,
             baseColor: rgba(
                 appearance.inactiveColor,
                 colorScheme: colorScheme,

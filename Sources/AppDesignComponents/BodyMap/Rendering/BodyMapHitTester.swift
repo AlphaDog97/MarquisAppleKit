@@ -11,6 +11,7 @@ enum BodyMapHitTester {
         in size: CGSize,
         side: BodyMapAnatomySide,
         model: BodyMapModel,
+        morphology: BodyMapMorphology = .neutral,
         bundle: Bundle
     ) -> BodyMapRegionID? {
         guard size.width > 0,
@@ -27,13 +28,17 @@ enum BodyMapHitTester {
             x: location.x / size.width,
             y: location.y / size.height
         )
+        let sourcePoint = BodyMapMorphologyWarp.sourceNormalizedPoint(
+            normalizedPoint,
+            morphology: morphology
+        )
 
         return BodyMapAnatomyAsset.allCases
             .filter { $0.side == side }
             .reversed()
             .first {
                 contains(
-                    normalizedPoint,
+                    sourcePoint,
                     asset: $0,
                     model: model,
                     bundle: bundle
@@ -52,6 +57,13 @@ enum BodyMapHitTester {
         model: BodyMapModel,
         bundle: Bundle
     ) -> Bool {
+        guard normalizedPoint.x >= 0,
+              normalizedPoint.x < 1,
+              normalizedPoint.y >= 0,
+              normalizedPoint.y < 1 else {
+            return false
+        }
+
         let assetName = BodyMapAnatomyAssetResolver.assetName(
             model: model,
             asset: asset

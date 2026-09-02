@@ -223,6 +223,7 @@ private struct BodyMapSidePlaceholder: View {
             .resizable()
             .scaledToFit()
             .foregroundStyle(appearance.inactiveColor)
+            .bodyMapMorphologyEffect(configuration.morphology)
             .accessibilityHidden(true)
             .aspectRatio(309.014 / 800, contentMode: .fit)
             .frame(maxWidth: .infinity, maxHeight: .infinity)

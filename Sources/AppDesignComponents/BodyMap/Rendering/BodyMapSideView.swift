@@ -78,6 +78,7 @@ struct BodyMapSideView: View {
             innerGlowLayer
                 .blendMode(.screen)
         }
+        .bodyMapMorphologyEffect(configuration.morphology)
     }
 
     private var glowLayer: some View {
@@ -170,6 +171,7 @@ struct BodyMapSideView: View {
                                     in: proxy.size,
                                     side: side,
                                     model: configuration.model,
+                                    morphology: configuration.morphology,
                                     bundle: configuration.resources.bundle
                                 ) else { return }
                                 onRegionTap(region)

@@ -34,6 +34,7 @@ public struct BodyMap: View {
     public init(
         model: BodyMapModel,
         regions: [BodyMapRegionStyle],
+        morphology: BodyMapMorphology = .neutral,
         appearance: BodyMapAppearance = .init(),
         animation: BodyMapAnimationConfiguration = .init(),
         revealID: UUID? = nil,
@@ -42,7 +43,10 @@ public struct BodyMap: View {
         onRegionTap: ((BodyMapRegionID) -> Void)? = nil
     ) {
         self.init(
-            configuration: .init(model: model),
+            configuration: .init(
+                model: model,
+                morphology: morphology
+            ),
             regions: regions,
             appearance: appearance,
             animation: animation,
@@ -55,13 +59,14 @@ public struct BodyMap: View {
 
     public init(
         appearance: BodyMapAppearance,
+        morphology: BodyMapMorphology = .neutral,
         animation: BodyMapAnimationConfiguration = .init(),
         revealID: UUID? = nil,
         revealIntensities: [BodyMapRegionID: Double] = [:],
         onRevealCompleted: ((UUID) -> Void)? = nil,
         onRegionTap: ((BodyMapRegionID) -> Void)? = nil
     ) {
-        self.configuration = .init()
+        self.configuration = .init(morphology: morphology)
         self.appearance = appearance
         self.animation = animation
         self.reveal = revealID.map {

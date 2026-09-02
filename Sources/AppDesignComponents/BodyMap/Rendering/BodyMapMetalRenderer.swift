@@ -108,6 +108,7 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
            animationsEnabled,
            transitionDuration > 0,
            let previous,
+           previous.morphology == state.morphology,
            previous != state,
            previous.assets.map(\.asset) == state.assets.map(\.asset) {
             transition = Transition(
@@ -154,9 +155,11 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
             metadata: SIMD4(
                 Float(state.assets.count),
                 Float(BodyMapGlowMetrics.innerOpacityScale),
-                0,
+                state.morphology.isNeutral ? 0 : 1,
                 0
-            )
+            ),
+            torsoScales: state.morphology.torsoScales,
+            limbScales: state.morphology.limbScales
         )
         prepareAssetUniforms(
             for: state,
@@ -633,6 +636,8 @@ private struct BlurConfiguration: Equatable {
 private struct BodyMapMetalFrameUniforms {
     var baseColor: SIMD4<Float>
     var metadata: SIMD4<Float>
+    var torsoScales: SIMD4<Float>
+    var limbScales: SIMD4<Float>
 }
 
 private struct BodyMapMetalAssetUniforms {
