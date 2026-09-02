@@ -108,6 +108,7 @@ final class BodyMapMetalRenderer: NSObject, MTKViewDelegate {
            animationsEnabled,
            transitionDuration > 0,
            let previous,
+           previous.morphology == state.morphology,
            previous != state,
            previous.assets.map(\.asset) == state.assets.map(\.asset) {
             transition = Transition(
