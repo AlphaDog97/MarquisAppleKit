@@ -26,6 +26,7 @@ struct BodyMapSideView: View {
     var body: some View {
         ZStack {
             visualLayer
+                .bodyMapMorphologyEffect(configuration.morphology)
             interactionLayer
         }
         .aspectRatio(309.014 / 800, contentMode: .fit)
@@ -170,6 +171,7 @@ struct BodyMapSideView: View {
                                     in: proxy.size,
                                     side: side,
                                     model: configuration.model,
+                                    morphology: configuration.morphology,
                                     bundle: configuration.resources.bundle
                                 ) else { return }
                                 onRegionTap(region)
