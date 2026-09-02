@@ -140,15 +140,12 @@ static float bodyMapMorphologySmoothMix(
 
 static float bodyMapMorphologyTorsoScale(
     float y,
-    float4 torsoScales,
-    float4 limbScales
+    float4 torsoScales
 ) {
     const float shoulders = torsoScales.x;
     const float chest = torsoScales.y;
     const float waist = torsoScales.z;
     const float hips = torsoScales.w;
-    const float thighs = limbScales.z;
-    const float calves = limbScales.w;
 
     if (y <= 0.10) {
         return 1.0;
@@ -165,14 +162,8 @@ static float bodyMapMorphologyTorsoScale(
     if (y <= 0.52) {
         return bodyMapMorphologySmoothMix(waist, hips, y, 0.41, 0.52);
     }
-    if (y <= 0.66) {
-        return bodyMapMorphologySmoothMix(hips, thighs, y, 0.52, 0.66);
-    }
-    if (y <= 0.84) {
-        return bodyMapMorphologySmoothMix(thighs, calves, y, 0.66, 0.84);
-    }
-    if (y <= 0.94) {
-        return bodyMapMorphologySmoothMix(calves, 1.0, y, 0.84, 0.94);
+    if (y <= 0.60) {
+        return bodyMapMorphologySmoothMix(hips, 1.0, y, 0.52, 0.60);
     }
     return 1.0;
 }
@@ -208,6 +199,31 @@ static float bodyMapMorphologyArmScale(
     return 1.0;
 }
 
+static float bodyMapMorphologyLegScale(
+    float y,
+    float4 limbScales
+) {
+    const float thighs = limbScales.z;
+    const float calves = limbScales.w;
+
+    if (y <= 0.52) {
+        return 1.0;
+    }
+    if (y <= 0.62) {
+        return bodyMapMorphologySmoothMix(1.0, thighs, y, 0.52, 0.62);
+    }
+    if (y <= 0.72) {
+        return thighs;
+    }
+    if (y <= 0.84) {
+        return bodyMapMorphologySmoothMix(thighs, calves, y, 0.72, 0.84);
+    }
+    if (y <= 0.94) {
+        return bodyMapMorphologySmoothMix(calves, 1.0, y, 0.84, 0.94);
+    }
+    return 1.0;
+}
+
 static float bodyMapMorphologyArmInfluence(float2 uv) {
     const float horizontal = smoothstep(0.19, 0.27, abs(uv.x - 0.5));
     const float verticalEntry = smoothstep(0.16, 0.23, uv.y);
@@ -215,27 +231,89 @@ static float bodyMapMorphologyArmInfluence(float2 uv) {
     return horizontal * verticalEntry * verticalExit;
 }
 
+static float bodyMapMorphologyLegInfluence(float y) {
+    return smoothstep(0.50, 0.60, y)
+        * (1.0 - smoothstep(0.93, 0.98, y));
+}
+
+static float bodyMapMorphologyArmCenterDistance(float y) {
+    if (y <= 0.28) {
+        return 0.23;
+    }
+    if (y <= 0.52) {
+        return bodyMapMorphologySmoothMix(0.23, 0.31, y, 0.28, 0.52);
+    }
+    return 0.31;
+}
+
+static float bodyMapMorphologyLegCenterDistance(float y) {
+    if (y <= 0.72) {
+        return 0.105;
+    }
+    if (y <= 0.88) {
+        return bodyMapMorphologySmoothMix(0.105, 0.115, y, 0.72, 0.88);
+    }
+    return 0.115;
+}
+
+static float bodyMapMorphologyLimbCenter(
+    float outputX,
+    float distanceFromMidline
+) {
+    const float delta = outputX - 0.5;
+    const float direction = delta < 0.0 ? -1.0 : 1.0;
+    const float separation = smoothstep(0.0, 0.06, abs(delta));
+    return 0.5 + direction * distanceFromMidline * separation;
+}
+
+static float bodyMapMorphologyScaledSourceX(
+    float outputX,
+    float centerX,
+    float scale
+) {
+    return centerX + (outputX - centerX) / scale;
+}
+
 static float2 bodyMapMorphologySourceUV(
     float2 uv,
     float4 torsoScales,
     float4 limbScales
 ) {
-    const float torsoScale = bodyMapMorphologyTorsoScale(
-        uv.y,
-        torsoScales,
-        limbScales
+    const float torsoSourceX = bodyMapMorphologyScaledSourceX(
+        uv.x,
+        0.5,
+        bodyMapMorphologyTorsoScale(uv.y, torsoScales)
     );
-    const float armScale = bodyMapMorphologyArmScale(uv.y, limbScales);
-    const float scale = mix(
-        torsoScale,
-        armScale,
+
+    const float legSourceX = bodyMapMorphologyScaledSourceX(
+        uv.x,
+        bodyMapMorphologyLimbCenter(
+            uv.x,
+            bodyMapMorphologyLegCenterDistance(uv.y)
+        ),
+        bodyMapMorphologyLegScale(uv.y, limbScales)
+    );
+    const float lowerBodySourceX = mix(
+        torsoSourceX,
+        legSourceX,
+        bodyMapMorphologyLegInfluence(uv.y)
+    );
+
+    const float armSourceX = bodyMapMorphologyScaledSourceX(
+        uv.x,
+        bodyMapMorphologyLimbCenter(
+            uv.x,
+            bodyMapMorphologyArmCenterDistance(uv.y)
+        ),
+        bodyMapMorphologyArmScale(uv.y, limbScales)
+    );
+    const float sourceX = mix(
+        lowerBodySourceX,
+        armSourceX,
         bodyMapMorphologyArmInfluence(uv)
     );
 
-    return float2(
-        0.5 + (uv.x - 0.5) / scale,
-        uv.y
-    );
+    return float2(sourceX, uv.y);
 }
 
 static float bodyMapGlowBrightnessProgress(float3 linearColor) {

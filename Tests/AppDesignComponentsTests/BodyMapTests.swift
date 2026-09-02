@@ -109,6 +109,54 @@ final class BodyMapTests: XCTestCase {
         XCTAssertGreaterThan(armShift, torsoShift)
     }
 
+    func testThighMorphologyPreservesLocalLegCenter() {
+        let morphology = BodyMapMorphology(thighs: 1.12)
+        let leftThighCenter = CGPoint(x: 0.395, y: 0.66)
+        let rightThighCenter = CGPoint(x: 0.605, y: 0.66)
+
+        let leftSource = BodyMapMorphologyWarp.sourceNormalizedPoint(
+            leftThighCenter,
+            morphology: morphology
+        )
+        let rightSource = BodyMapMorphologyWarp.sourceNormalizedPoint(
+            rightThighCenter,
+            morphology: morphology
+        )
+
+        XCTAssertEqual(leftSource.x, leftThighCenter.x, accuracy: 0.000_001)
+        XCTAssertEqual(rightSource.x, rightThighCenter.x, accuracy: 0.000_001)
+        XCTAssertEqual(leftSource.y, leftThighCenter.y, accuracy: 0.000_001)
+        XCTAssertEqual(rightSource.y, rightThighCenter.y, accuracy: 0.000_001)
+    }
+
+    func testMorphologyWarpRemainsHorizontallySymmetric() {
+        let morphology = BodyMapMorphology(
+            shoulders: 1.05,
+            waist: 0.95,
+            hips: 1.06,
+            upperArms: 1.08,
+            thighs: 1.10
+        )
+        let left = CGPoint(x: 0.32, y: 0.62)
+        let right = CGPoint(x: 0.68, y: 0.62)
+
+        let leftSource = BodyMapMorphologyWarp.sourceNormalizedPoint(
+            left,
+            morphology: morphology
+        )
+        let rightSource = BodyMapMorphologyWarp.sourceNormalizedPoint(
+            right,
+            morphology: morphology
+        )
+
+        XCTAssertEqual(
+            leftSource.x,
+            1 - rightSource.x,
+            accuracy: 0.000_001
+        )
+        XCTAssertEqual(leftSource.y, rightSource.y, accuracy: 0.000_001)
+    }
+
     func testAnatomyManifestMatchesSomaTrackSides() {
         let front = BodyMapAnatomyAsset.allCases.filter { $0.side == .front }
         let back = BodyMapAnatomyAsset.allCases.filter { $0.side == .back }

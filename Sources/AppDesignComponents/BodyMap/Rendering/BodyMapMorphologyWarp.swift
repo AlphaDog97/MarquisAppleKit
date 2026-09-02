@@ -10,15 +10,42 @@ enum BodyMapMorphologyWarp {
 
         let x = Double(point.x)
         let y = Double(point.y)
-        let torsoScale = torsoEnvelopeScale(y: y, morphology: morphology)
-        let armScale = armEnvelopeScale(y: y, morphology: morphology)
-        let armInfluence = armInfluence(x: x, y: y)
-        let scale = mix(torsoScale, armScale, armInfluence)
 
-        return CGPoint(
-            x: 0.5 + (x - 0.5) / scale,
-            y: y
+        let torsoSourceX = scaledSourceX(
+            outputX: x,
+            centerX: 0.5,
+            scale: torsoEnvelopeScale(y: y, morphology: morphology)
         )
+
+        let legSourceX = scaledSourceX(
+            outputX: x,
+            centerX: limbCenter(
+                outputX: x,
+                distanceFromMidline: legCenterDistance(y: y)
+            ),
+            scale: legEnvelopeScale(y: y, morphology: morphology)
+        )
+        let lowerBodySourceX = mix(
+            torsoSourceX,
+            legSourceX,
+            legInfluence(y: y)
+        )
+
+        let armSourceX = scaledSourceX(
+            outputX: x,
+            centerX: limbCenter(
+                outputX: x,
+                distanceFromMidline: armCenterDistance(y: y)
+            ),
+            scale: armEnvelopeScale(y: y, morphology: morphology)
+        )
+        let sourceX = mix(
+            lowerBodySourceX,
+            armSourceX,
+            armInfluence(x: x, y: y)
+        )
+
+        return CGPoint(x: sourceX, y: y)
     }
 
     private static func torsoEnvelopeScale(
@@ -56,26 +83,8 @@ enum BodyMapMorphologyWarp {
                 0.52
             )
         }
-        if y <= 0.66 {
-            return smoothedMix(
-                morphology.hips,
-                morphology.thighs,
-                y,
-                0.52,
-                0.66
-            )
-        }
-        if y <= 0.84 {
-            return smoothedMix(
-                morphology.thighs,
-                morphology.calves,
-                y,
-                0.66,
-                0.84
-            )
-        }
-        if y <= 0.94 {
-            return smoothedMix(morphology.calves, 1, y, 0.84, 0.94)
+        if y <= 0.60 {
+            return smoothedMix(morphology.hips, 1, y, 0.52, 0.60)
         }
         return 1
     }
@@ -104,11 +113,74 @@ enum BodyMapMorphologyWarp {
         return 1
     }
 
+    private static func legEnvelopeScale(
+        y: Double,
+        morphology: BodyMapMorphology
+    ) -> Double {
+        if y <= 0.52 { return 1 }
+        if y <= 0.62 {
+            return smoothedMix(1, morphology.thighs, y, 0.52, 0.62)
+        }
+        if y <= 0.72 { return morphology.thighs }
+        if y <= 0.84 {
+            return smoothedMix(
+                morphology.thighs,
+                morphology.calves,
+                y,
+                0.72,
+                0.84
+            )
+        }
+        if y <= 0.94 {
+            return smoothedMix(morphology.calves, 1, y, 0.84, 0.94)
+        }
+        return 1
+    }
+
     private static func armInfluence(x: Double, y: Double) -> Double {
         let horizontal = smoothstep(0.19, 0.27, abs(x - 0.5))
         let verticalEntry = smoothstep(0.16, 0.23, y)
         let verticalExit = 1 - smoothstep(0.58, 0.66, y)
         return horizontal * verticalEntry * verticalExit
+    }
+
+    private static func legInfluence(y: Double) -> Double {
+        smoothstep(0.50, 0.60, y)
+            * (1 - smoothstep(0.93, 0.98, y))
+    }
+
+    private static func armCenterDistance(y: Double) -> Double {
+        if y <= 0.28 { return 0.23 }
+        if y <= 0.52 {
+            return smoothedMix(0.23, 0.31, y, 0.28, 0.52)
+        }
+        return 0.31
+    }
+
+    private static func legCenterDistance(y: Double) -> Double {
+        if y <= 0.72 { return 0.105 }
+        if y <= 0.88 {
+            return smoothedMix(0.105, 0.115, y, 0.72, 0.88)
+        }
+        return 0.115
+    }
+
+    private static func limbCenter(
+        outputX: Double,
+        distanceFromMidline: Double
+    ) -> Double {
+        let delta = outputX - 0.5
+        let direction = delta < 0 ? -1.0 : 1.0
+        let separation = smoothstep(0, 0.06, abs(delta))
+        return 0.5 + direction * distanceFromMidline * separation
+    }
+
+    private static func scaledSourceX(
+        outputX: Double,
+        centerX: Double,
+        scale: Double
+    ) -> Double {
+        centerX + (outputX - centerX) / scale
     }
 
     private static func smoothedMix(
